@@ -1,0 +1,160 @@
+<!-- Araç Formu Template - Oluşturma ve Düzenleme -->
+<div class="form-container">
+  <mat-card>
+
+    <!-- Kart Başlığı -->
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>{{ isEditMode ? 'edit' : 'add_circle' }}</mat-icon>
+        {{ pageTitle }}
+      </mat-card-title>
+      <mat-card-subtitle>
+        {{ isEditMode ? 'Araç bilgilerini güncelleyin' : 'Yeni bir araç kaydı oluşturun' }}
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
+
+        <!-- TEMEL BİLGİLER -->
+        <h3 class="section-title">Temel Bilgiler</h3>
+        <mat-divider></mat-divider>
+
+        <div class="form-row">
+          <!-- Plaka -->
+          <mat-form-field appearance="outline">
+            <mat-label>Plaka Numarası *</mat-label>
+            <input matInput formControlName="licensePlate"
+                   placeholder="34 ABC 1234"
+                   style="text-transform: uppercase">
+            <mat-icon matSuffix>pin</mat-icon>
+            <mat-hint>Format: 34 ABC 1234</mat-hint>
+            <mat-error *ngIf="f['licensePlate'].errors?.['required']">Plaka zorunludur</mat-error>
+            <mat-error *ngIf="f['licensePlate'].errors?.['pattern']">Geçersiz plaka formatı</mat-error>
+          </mat-form-field>
+
+          <!-- Model ID -->
+          <mat-form-field appearance="outline">
+            <mat-label>Model ID *</mat-label>
+            <input matInput formControlName="modelId" type="number" placeholder="1">
+            <mat-icon matSuffix>directions_car</mat-icon>
+            <mat-error *ngIf="f['modelId'].errors?.['required']">Model zorunludur</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <!-- Üretim Yılı -->
+          <mat-form-field appearance="outline">
+            <mat-label>Üretim Yılı *</mat-label>
+            <input matInput formControlName="year" type="number" placeholder="2023">
+            <mat-icon matSuffix>calendar_today</mat-icon>
+            <mat-error *ngIf="f['year'].errors?.['required']">Yıl zorunludur</mat-error>
+            <mat-error *ngIf="f['year'].errors?.['min'] || f['year'].errors?.['max']">
+              Geçerli bir yıl giriniz (1886-2030)
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Renk -->
+          <mat-form-field appearance="outline">
+            <mat-label>Renk</mat-label>
+            <input matInput formControlName="color" placeholder="Beyaz">
+            <mat-icon matSuffix>palette</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- FİYAT BİLGİLERİ -->
+        <h3 class="section-title">Fiyat Bilgileri</h3>
+        <mat-divider></mat-divider>
+
+        <div class="form-row">
+          <!-- Satış Fiyatı -->
+          <mat-form-field appearance="outline">
+            <mat-label>Satış Fiyatı (₺) *</mat-label>
+            <input matInput formControlName="price" type="number" placeholder="500000">
+            <span matTextPrefix>₺&nbsp;</span>
+            <mat-error *ngIf="f['price'].errors?.['required']">Fiyat zorunludur</mat-error>
+          </mat-form-field>
+
+          <!-- Günlük Kiralama Ücreti -->
+          <mat-form-field appearance="outline">
+            <mat-label>Günlük Kiralama (₺)</mat-label>
+            <input matInput formControlName="dailyRate" type="number" placeholder="500">
+            <span matTextPrefix>₺&nbsp;</span>
+          </mat-form-field>
+
+          <!-- Kilometre -->
+          <mat-form-field appearance="outline">
+            <mat-label>Kilometre</mat-label>
+            <input matInput formControlName="mileage" type="number" placeholder="0">
+            <span matTextSuffix>&nbsp;km</span>
+          </mat-form-field>
+        </div>
+
+        <!-- ARAÇ KİMLİK BİLGİLERİ -->
+        <h3 class="section-title">Kimlik Bilgileri</h3>
+        <mat-divider></mat-divider>
+
+        <div class="form-row">
+          <!-- VIN Numarası -->
+          <mat-form-field appearance="outline">
+            <mat-label>VIN Numarası (17 hane)</mat-label>
+            <input matInput formControlName="vinNumber" placeholder="1HGBH41JXMN109186"
+                   maxlength="17" style="text-transform: uppercase">
+            <mat-error *ngIf="f['vinNumber'].errors?.['minlength'] || f['vinNumber'].errors?.['maxlength']">
+              VIN numarası tam 17 karakter olmalıdır
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Motor Numarası -->
+          <mat-form-field appearance="outline">
+            <mat-label>Motor Numarası</mat-label>
+            <input matInput formControlName="engineNumber" placeholder="ABC123456">
+          </mat-form-field>
+        </div>
+
+        <!-- TARİH BİLGİLERİ -->
+        <h3 class="section-title">Tarih Bilgileri</h3>
+        <mat-divider></mat-divider>
+
+        <div class="form-row">
+          <!-- Son Muayene Tarihi -->
+          <mat-form-field appearance="outline">
+            <mat-label>Son Muayene Tarihi</mat-label>
+            <input matInput [matDatepicker]="inspectionPicker" formControlName="lastInspectionDate">
+            <mat-datepicker-toggle matIconSuffix [for]="inspectionPicker"></mat-datepicker-toggle>
+            <mat-datepicker #inspectionPicker></mat-datepicker>
+          </mat-form-field>
+
+          <!-- Sigorta Bitiş Tarihi -->
+          <mat-form-field appearance="outline">
+            <mat-label>Sigorta Bitiş Tarihi</mat-label>
+            <input matInput [matDatepicker]="insurancePicker" formControlName="insuranceExpiryDate">
+            <mat-datepicker-toggle matIconSuffix [for]="insurancePicker"></mat-datepicker-toggle>
+            <mat-datepicker #insurancePicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <!-- Açıklama -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Açıklama</mat-label>
+          <textarea matInput formControlName="description"
+                    rows="4" placeholder="Araç hakkında ek bilgiler..."></textarea>
+          <mat-hint align="end">{{ f['description'].value?.length || 0 }}/2000</mat-hint>
+        </mat-form-field>
+
+        <!-- FORM BUTONLARI -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()" [disabled]="isLoading">
+            <mat-icon>close</mat-icon> İptal
+          </button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+            <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+            <mat-icon *ngIf="!isLoading">{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+            <span *ngIf="!isLoading">{{ isEditMode ? 'Güncelle' : 'Kaydet' }}</span>
+          </button>
+        </div>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

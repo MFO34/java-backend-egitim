@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Proje kimlik bilgileri -->
+    <groupId>com.ogrenci</groupId>
+    <artifactId>ogrenci-takip-sistemi</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Öğrenci Takip Sistemi</name>
+    <description>Java 21 + JDBC + PostgreSQL ile geliştirilmiş öğrenci takip uygulaması</description>
+
+    <properties>
+        <!-- Java 21 LTS: Record, Sealed Class, Pattern Matching için gerekli -->
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Bağımlılık versiyonlarını tek yerden yönet -->
+        <postgresql.version>42.7.3</postgresql.version>
+        <hikaricp.version>5.1.0</hikaricp.version>
+        <slf4j.version>2.0.12</slf4j.version>
+    </properties>
+
+    <dependencies>
+
+        <!-- PostgreSQL JDBC Sürücüsü: Java'nın PostgreSQL ile konuşmasını sağlar -->
+        <!-- JDBC driver olmadan veritabanına bağlanamayız -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+        </dependency>
+
+        <!-- HikariCP: Yüksek performanslı Connection Pool kütüphanesi -->
+        <!-- Her sorgu için yeni bağlantı açmak yerine havuzdan alır — çok daha hızlı -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikaricp.version}</version>
+        </dependency>
+
+        <!-- SLF4J: Loglama soyutlama katmanı (HikariCP logları için gerekli) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Java 21 ile derleme için derleyici eklentisi -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>21</release>
+                    <encoding>UTF-8</encoding>
+                    <!-- Java 21 preview özelliklerini etkinleştir (gerekirse) -->
+                    <compilerArgs>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <!-- Çalıştırılabilir "fat JAR" oluştur: bağımlılıkları içine göm -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <!-- Programın başlangıç noktası -->
+                            <mainClass>com.ogrenci.app.OgrenciApp</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <!-- Preview özelliklerini JAR içinde de etkinleştir -->
+                            <Enable-Preview>true</Enable-Preview>
+                        </manifestEntries>
+                    </archive>
+                    <!-- jar-with-dependencies: tüm kütüphaneler tek JAR'da -->
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <finalName>ogrenci-takip</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Surefire: test çalıştırıcı (preview özellikler için ayarlı) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <argLine>--enable-preview</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

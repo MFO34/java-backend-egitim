@@ -1,0 +1,25 @@
+# Maven derleme çıktıları
+target/
+*.jar
+
+# IDE dosyaları
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# macOS
+.DS_Store
+
+# Uygulama log dosyaları
+*.log
+logs/
+
+# Ortam değişkenleri — şifre içerebilir, asla commit'leme!
+.env
+*.env
+
+# Docker volume verileri (runtime'da oluşur)
+postgres_data/

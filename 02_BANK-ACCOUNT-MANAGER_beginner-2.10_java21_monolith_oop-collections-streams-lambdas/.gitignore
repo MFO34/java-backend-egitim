@@ -1,0 +1,45 @@
+# ============================================
+# .gitignore — Git'e hangi dosyaların
+# dahil EDİLMEYECEĞİNİ söyler
+# ============================================
+
+# Maven derleme çıktıları (build sonucu oluşur, kaynak değil)
+target/
+*.jar
+*.war
+*.ear
+
+# Maven wrapper cache
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE dosyaları — IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# IDE dosyaları — Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# IDE dosyaları — VS Code
+.vscode/
+
+# macOS sistem dosyaları
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Log dosyaları
+*.log
+logs/
+
+# Uygulama veri dosyaları (runtime'da oluşur)
+data/
+*.txt
+
+# İşletim sistemi dosyaları
+Thumbs.db
+ehthumbs.db

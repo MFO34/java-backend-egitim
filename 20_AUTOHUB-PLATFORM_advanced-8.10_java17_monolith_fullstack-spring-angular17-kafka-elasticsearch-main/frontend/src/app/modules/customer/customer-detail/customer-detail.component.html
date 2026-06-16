@@ -1,0 +1,169 @@
+<!-- Müşteri Detay Template -->
+<div class="detail-container">
+
+  <!-- Yükleniyor -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+
+  <ng-container *ngIf="customer && !isLoading">
+
+    <!-- Üst Aksiyon Çubuğu -->
+    <div class="action-bar">
+      <button mat-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon> Müşteri Listesi
+      </button>
+      <div class="action-buttons">
+        <button mat-stroked-button color="accent"
+                *ngIf="authService.isEmployee()"
+                (click)="editCustomer()">
+          <mat-icon>edit</mat-icon> Düzenle
+        </button>
+        <button mat-stroked-button color="warn"
+                *ngIf="authService.isManager()"
+                (click)="deleteCustomer()">
+          <mat-icon>delete</mat-icon> Sil
+        </button>
+      </div>
+    </div>
+
+    <!-- Müşteri Başlık Kartı -->
+    <mat-card class="header-card">
+      <mat-card-content>
+        <div class="customer-header">
+          <div class="customer-avatar">
+            <mat-icon>account_circle</mat-icon>
+          </div>
+          <div class="customer-info">
+            <h1>{{ customer.firstName }} {{ customer.lastName }}</h1>
+            <p class="tc-number" *ngIf="customer.tcNumber">
+              <mat-icon>badge</mat-icon> TC: {{ customer.tcNumber }}
+            </p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="detail-grid">
+
+      <!-- İletişim Bilgileri -->
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title><mat-icon>contacts</mat-icon> İletişim</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Telefon</span>
+              <span class="value">{{ customer.phone || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">E-posta</span>
+              <span class="value">{{ customer.email || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Şehir</span>
+              <span class="value">{{ customer.city || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Doğum Tarihi</span>
+              <span class="value">{{ customer.birthDate || '-' }}</span>
+            </div>
+          </div>
+          <div class="info-item full-width" *ngIf="customer.address">
+            <span class="label">Adres</span>
+            <span class="value">{{ customer.address }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Diğer Bilgiler -->
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title><mat-icon>info</mat-icon> Diğer Bilgiler</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Ehliyet No</span>
+              <span class="value">{{ customer.drivingLicenseNumber || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Kayıt Tarihi</span>
+              <span class="value">{{ customer.createdAt | date:'dd.MM.yyyy':'':'tr' }}</span>
+            </div>
+          </div>
+          <div class="info-item" *ngIf="customer.notes" style="margin-top: 12px">
+            <span class="label">Notlar</span>
+            <span class="value">{{ customer.notes }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+    </div>
+
+    <!-- İşlem Geçmişi -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>receipt_long</mat-icon> İşlem Geçmişi
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="loading-overlay" *ngIf="isLoadingTransactions">
+          <mat-spinner diameter="32"></mat-spinner>
+        </div>
+        <p *ngIf="!isLoadingTransactions && transactions.length === 0" class="empty-text">
+          Bu müşteriye ait işlem bulunmamaktadır.
+        </p>
+        <table mat-table [dataSource]="transactions"
+               *ngIf="!isLoadingTransactions && transactions.length > 0"
+               class="full-width">
+
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef>#</th>
+            <td mat-cell *matCellDef="let t">{{ t.id }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="vehicleName">
+            <th mat-header-cell *matHeaderCellDef>Araç</th>
+            <td mat-cell *matCellDef="let t">
+              {{ t.vehicleName }} <small class="plate">{{ t.vehiclePlate }}</small>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="transactionType">
+            <th mat-header-cell *matHeaderCellDef>Tür</th>
+            <td mat-cell *matCellDef="let t">{{ typeLabels[t.transactionType] }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="startDate">
+            <th mat-header-cell *matHeaderCellDef>Tarih</th>
+            <td mat-cell *matCellDef="let t">{{ t.startDate | date:'dd.MM.yyyy' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="totalAmount">
+            <th mat-header-cell *matHeaderCellDef>Tutar</th>
+            <td mat-cell *matCellDef="let t">
+              {{ t.totalAmount | currency:'TRY':'symbol':'1.0-0':'tr' }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Durum</th>
+            <td mat-cell *matCellDef="let t">
+              <span class="status-chip" [ngClass]="getStatusClass(t.status)">
+                {{ statusLabels[t.status] }}
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="transactionColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: transactionColumns;"
+              class="clickable-row" (click)="viewTransaction(row)"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+
+  </ng-container>
+</div>

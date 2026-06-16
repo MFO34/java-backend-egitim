@@ -1,0 +1,183 @@
+# AutoHub Backend Kubernetes Deployment
+# Spring Boot uygulamasını Kubernetes'te yönetir
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autohub-backend            # Deployment adı
+  namespace: autohub
+  labels:
+    app: autohub-backend
+    version: "1.0.0"
+    component: api
+spec:
+  replicas: 3                      # 3 replica - yüksek erişilebilirlik için
+  selector:
+    matchLabels:
+      app: autohub-backend
+  # Güncelleme stratejisi - Zero-downtime deployment
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1                  # Güncelleme sırasında max +1 pod ekstra
+      maxUnavailable: 0            # Güncelleme sırasında hiçbir pod kapalı olmasın
+  template:
+    metadata:
+      labels:
+        app: autohub-backend
+      annotations:
+        # Prometheus metrik toplama anotasyonları
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/api/actuator/prometheus"
+        prometheus.io/port: "8080"
+    spec:
+      # Pod anti-affinity - pod'ların farklı node'lara dağılmasını sağlar
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: [autohub-backend]
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: autohub-backend
+          image: autohub/backend:latest  # Docker Hub'dan veya private registry'den
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          # ConfigMap'ten environment değişkenleri
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          # Secret'ten hassas bilgiler
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: secret
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+          # Kaynak limitleri
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "2000m"
+          # Hazırlık probu - pod trafiğe hazır mı?
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30    # İlk 30 saniye bekleme
+            periodSeconds: 10          # Her 10 saniyede bir kontrol
+            failureThreshold: 3        # 3 başarısız = hazır değil
+          # Canlılık probu - pod çalışıyor mu?
+          livenessProbe:
+            httpGet:
+              path: /api/actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60    # Uygulama başlaması için 60 saniye
+            periodSeconds: 30
+            failureThreshold: 3
+          # Başlangıç probu - ilk başlamayı beklemek için
+          startupProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8080
+            failureThreshold: 30       # 30 * 10s = 5 dakika maksimum başlama süresi
+            periodSeconds: 10
+---
+# Backend Service - Cluster içi ve dışı erişim
+apiVersion: v1
+kind: Service
+metadata:
+  name: autohub-backend-service
+  namespace: autohub
+  labels:
+    app: autohub-backend
+spec:
+  selector:
+    app: autohub-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  type: ClusterIP              # Sadece cluster içi erişim
+---
+# Backend ConfigMap - Ortam değişkenleri
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: autohub
+data:
+  DB_HOST: postgres-service    # Kubernetes DNS ile servis adı
+  DB_PORT: "5432"
+  DB_NAME: autohub_db
+  DB_USERNAME: autohub_user
+  REDIS_HOST: redis-service
+  REDIS_PORT: "6379"
+  KAFKA_SERVERS: kafka-service:9092
+  ES_URI: http://elasticsearch-service:9200
+  AMQ_URL: tcp://activemq-service:61616
+  CONSUL_HOST: consul-service
+  CONSUL_PORT: "8500"
+  ZIPKIN_URL: http://zipkin-service:9411
+  CORS_ORIGINS: https://autohub.com
+  SERVER_PORT: "8080"
+---
+# JWT Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jwt-secret
+  namespace: autohub
+type: Opaque
+data:
+  # base64 encoded JWT secret
+  secret: YXV0b2h1Yi1zdXBlci1zZWNyZXQta2V5
+---
+# Horizontal Pod Autoscaler - Otomatik ölçekleme
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autohub-backend-hpa
+  namespace: autohub
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: autohub-backend
+  minReplicas: 2               # Minimum 2 replica
+  maxReplicas: 10              # Maximum 10 replica
+  metrics:
+    # CPU kullanımı %70'i geçince ölçekle
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    # Bellek kullanımı %80'i geçince ölçekle
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

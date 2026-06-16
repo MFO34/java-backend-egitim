@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    CHANGESET 002 — ÖRNEK VERİ
+    runOnChange="false" → Bu changeset sadece bir kez çalışır
+    Veritabanı sıfırlandığında tekrar çalışır (DATABASECHANGELOG'dan silinirse)
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="002-insert-categories" author="eticaret-dev">
+        <comment>Örnek kategori verileri — hiyerarşik yapı</comment>
+
+        <!-- Ana kategoriler (parent_id = null) -->
+        <insert tableName="categories">
+            <column name="id" valueNumeric="1"/>
+            <column name="name" value="Elektronik"/>
+            <column name="slug" value="elektronik"/>
+            <column name="description" value="Elektronik ürünler ve cihazlar"/>
+            <column name="display_order" valueNumeric="1"/>
+        </insert>
+        <insert tableName="categories">
+            <column name="id" valueNumeric="2"/>
+            <column name="name" value="Giyim"/>
+            <column name="slug" value="giyim"/>
+            <column name="description" value="Erkek, kadın ve çocuk giyim"/>
+            <column name="display_order" valueNumeric="2"/>
+        </insert>
+        <insert tableName="categories">
+            <column name="id" valueNumeric="3"/>
+            <column name="name" value="Kitap"/>
+            <column name="slug" value="kitap"/>
+            <column name="description" value="Her türlü kitap"/>
+            <column name="display_order" valueNumeric="3"/>
+        </insert>
+
+        <!-- Alt kategoriler (parent_id → ana kategoriye bağlı) -->
+        <insert tableName="categories">
+            <column name="id" valueNumeric="4"/>
+            <column name="name" value="Akıllı Telefon"/>
+            <column name="slug" value="akilli-telefon"/>
+            <column name="parent_id" valueNumeric="1"/>
+            <column name="display_order" valueNumeric="1"/>
+        </insert>
+        <insert tableName="categories">
+            <column name="id" valueNumeric="5"/>
+            <column name="name" value="Dizüstü Bilgisayar"/>
+            <column name="slug" value="dizustu-bilgisayar"/>
+            <column name="parent_id" valueNumeric="1"/>
+            <column name="display_order" valueNumeric="2"/>
+        </insert>
+        <insert tableName="categories">
+            <column name="id" valueNumeric="6"/>
+            <column name="name" value="Programlama"/>
+            <column name="slug" value="programlama"/>
+            <column name="parent_id" valueNumeric="3"/>
+            <column name="display_order" valueNumeric="1"/>
+        </insert>
+
+        <!-- Auto-increment sayacını güncelle (manuel id sonrası gerekli) -->
+        <sql>SELECT setval('categories_id_seq', 10)</sql>
+
+        <rollback>
+            <delete tableName="categories"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-insert-tags" author="eticaret-dev">
+        <comment>Ürün etiketleri</comment>
+
+        <insert tableName="tags">
+            <column name="id" valueNumeric="1"/>
+            <column name="name" value="İndirimli"/>
+            <column name="slug" value="indirimli"/>
+        </insert>
+        <insert tableName="tags">
+            <column name="id" valueNumeric="2"/>
+            <column name="name" value="Yeni Sezon"/>
+            <column name="slug" value="yeni-sezon"/>
+        </insert>
+        <insert tableName="tags">
+            <column name="id" valueNumeric="3"/>
+            <column name="name" value="Çok Satan"/>
+            <column name="slug" value="cok-satan"/>
+        </insert>
+        <insert tableName="tags">
+            <column name="id" valueNumeric="4"/>
+            <column name="name" value="Özel Fırsat"/>
+            <column name="slug" value="ozel-firsat"/>
+        </insert>
+
+        <sql>SELECT setval('tags_id_seq', 10)</sql>
+
+        <rollback>
+            <delete tableName="tags"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-insert-users" author="eticaret-dev">
+        <comment>Örnek kullanıcılar</comment>
+
+        <!-- Adres oluştur önce -->
+        <insert tableName="addresses">
+            <column name="id" valueNumeric="1"/>
+            <column name="title" value="Ev Adresi"/>
+            <column name="street" value="Atatürk Cad. No:1"/>
+            <column name="city" value="İstanbul"/>
+            <column name="district" value="Kadıköy"/>
+            <column name="postal_code" value="34710"/>
+        </insert>
+        <insert tableName="addresses">
+            <column name="id" valueNumeric="2"/>
+            <column name="title" value="İş Adresi"/>
+            <column name="street" value="Bağdat Cad. No:55"/>
+            <column name="city" value="İstanbul"/>
+            <column name="district" value="Maltepe"/>
+            <column name="postal_code" value="34840"/>
+        </insert>
+
+        <sql>SELECT setval('addresses_id_seq', 10)</sql>
+
+        <!-- Kullanıcılar -->
+        <insert tableName="users">
+            <column name="id" valueNumeric="1"/>
+            <column name="first_name" value="Ahmet"/>
+            <column name="last_name" value="Yılmaz"/>
+            <column name="email" value="ahmet@example.com"/>
+            <column name="password" value="$2a$10$hashedpassword1"/>
+            <column name="phone" value="05551234567"/>
+            <column name="address_id" valueNumeric="1"/>
+        </insert>
+        <insert tableName="users">
+            <column name="id" valueNumeric="2"/>
+            <column name="first_name" value="Fatma"/>
+            <column name="last_name" value="Kaya"/>
+            <column name="email" value="fatma@example.com"/>
+            <column name="password" value="$2a$10$hashedpassword2"/>
+            <column name="phone" value="05559876543"/>
+            <column name="address_id" valueNumeric="2"/>
+        </insert>
+
+        <sql>SELECT setval('users_id_seq', 10)</sql>
+
+        <rollback>
+            <delete tableName="users"/>
+            <delete tableName="addresses"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-insert-products" author="eticaret-dev">
+        <comment>Örnek ürünler</comment>
+
+        <insert tableName="products">
+            <column name="id" valueNumeric="1"/>
+            <column name="name" value="iPhone 15 Pro"/>
+            <column name="slug" value="iphone-15-pro"/>
+            <column name="description" value="Apple'ın amiral gemisi akıllı telefonu. A17 Pro çip, titanium tasarım."/>
+            <column name="price" valueNumeric="54999.99"/>
+            <column name="original_price" valueNumeric="59999.99"/>
+            <column name="stock_quantity" valueNumeric="50"/>
+            <column name="category_id" valueNumeric="4"/>
+        </insert>
+        <insert tableName="products">
+            <column name="id" valueNumeric="2"/>
+            <column name="name" value="Samsung Galaxy S24"/>
+            <column name="slug" value="samsung-galaxy-s24"/>
+            <column name="description" value="Samsung'un yeni nesil akıllı telefonu. Galaxy AI özellikli."/>
+            <column name="price" valueNumeric="44999.99"/>
+            <column name="stock_quantity" valueNumeric="75"/>
+            <column name="category_id" valueNumeric="4"/>
+        </insert>
+        <insert tableName="products">
+            <column name="id" valueNumeric="3"/>
+            <column name="name" value="MacBook Pro M3"/>
+            <column name="slug" value="macbook-pro-m3"/>
+            <column name="description" value="Apple M3 Pro çipli profesyonel dizüstü bilgisayar."/>
+            <column name="price" valueNumeric="89999.99"/>
+            <column name="stock_quantity" valueNumeric="20"/>
+            <column name="category_id" valueNumeric="5"/>
+        </insert>
+        <insert tableName="products">
+            <column name="id" valueNumeric="4"/>
+            <column name="name" value="Spring Boot in Action"/>
+            <column name="slug" value="spring-boot-in-action"/>
+            <column name="description" value="Spring Boot ile modern Java uygulaması geliştirme rehberi."/>
+            <column name="price" valueNumeric="299.99"/>
+            <column name="stock_quantity" valueNumeric="100"/>
+            <column name="category_id" valueNumeric="6"/>
+        </insert>
+        <insert tableName="products">
+            <column name="id" valueNumeric="5"/>
+            <column name="name" value="Clean Code"/>
+            <column name="slug" value="clean-code"/>
+            <column name="description" value="Robert C. Martin'in temiz kod yazma rehberi."/>
+            <column name="price" valueNumeric="249.99"/>
+            <column name="stock_quantity" valueNumeric="3"/>
+            <column name="category_id" valueNumeric="6"/>
+        </insert>
+
+        <sql>SELECT setval('products_id_seq', 10)</sql>
+
+        <rollback>
+            <delete tableName="products"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-insert-product-tags" author="eticaret-dev">
+        <comment>Ürün-etiket ilişkileri — @ManyToMany ara tablo</comment>
+
+        <!-- iPhone → İndirimli, Çok Satan -->
+        <insert tableName="product_tags">
+            <column name="product_id" valueNumeric="1"/>
+            <column name="tag_id" valueNumeric="1"/>
+        </insert>
+        <insert tableName="product_tags">
+            <column name="product_id" valueNumeric="1"/>
+            <column name="tag_id" valueNumeric="3"/>
+        </insert>
+        <!-- Samsung → Yeni Sezon, Özel Fırsat -->
+        <insert tableName="product_tags">
+            <column name="product_id" valueNumeric="2"/>
+            <column name="tag_id" valueNumeric="2"/>
+        </insert>
+        <insert tableName="product_tags">
+            <column name="product_id" valueNumeric="2"/>
+            <column name="tag_id" valueNumeric="4"/>
+        </insert>
+        <!-- Clean Code → Çok Satan -->
+        <insert tableName="product_tags">
+            <column name="product_id" valueNumeric="5"/>
+            <column name="tag_id" valueNumeric="3"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="product_tags"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-insert-carts" author="eticaret-dev">
+        <comment>Kullanıcı sepetleri oluştur</comment>
+
+        <insert tableName="carts">
+            <column name="id" valueNumeric="1"/>
+            <column name="user_id" valueNumeric="1"/>
+        </insert>
+        <insert tableName="carts">
+            <column name="id" valueNumeric="2"/>
+            <column name="user_id" valueNumeric="2"/>
+        </insert>
+
+        <sql>SELECT setval('carts_id_seq', 10)</sql>
+
+        <rollback>
+            <delete tableName="carts"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Migration başarılı → v1.1 etiketi -->
+    <changeSet id="002-tag-v1-1" author="eticaret-dev">
+        <tagDatabase tag="v1.1-sample-data-inserted"/>
+    </changeSet>
+
+</databaseChangeLog>

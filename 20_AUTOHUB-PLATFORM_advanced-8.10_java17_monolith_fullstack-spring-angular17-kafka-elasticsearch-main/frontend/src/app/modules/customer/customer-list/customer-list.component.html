@@ -1,0 +1,134 @@
+<!-- Müşteri Listesi Template -->
+<div class="list-container">
+
+  <!-- Sayfa Başlığı ve Aksiyonlar -->
+  <div class="page-header">
+    <div class="header-title">
+      <mat-icon>people</mat-icon>
+      <h2>Müşteriler</h2>
+    </div>
+    <button mat-raised-button color="primary"
+            *ngIf="authService.isEmployee()"
+            (click)="addCustomer()">
+      <mat-icon>person_add</mat-icon> Yeni Müşteri
+    </button>
+  </div>
+
+  <!-- Arama Çubuğu -->
+  <mat-card class="search-card">
+    <mat-card-content>
+      <div class="search-row">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Müşteri Ara</mat-label>
+          <input matInput [(ngModel)]="searchTerm"
+                 placeholder="Ad, soyad veya TC kimlik no..."
+                 (keyup.enter)="onSearch()">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+        <button mat-raised-button color="primary" (click)="onSearch()">
+          <mat-icon>search</mat-icon> Ara
+        </button>
+        <button mat-stroked-button (click)="clearSearch()" *ngIf="searchTerm">
+          <mat-icon>clear</mat-icon> Temizle
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Yükleniyor -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+
+  <!-- Boş Durum -->
+  <mat-card *ngIf="!isLoading && customers.length === 0" class="empty-state">
+    <mat-card-content>
+      <mat-icon>people_outline</mat-icon>
+      <p>{{ searchTerm ? 'Aramanızla eşleşen müşteri bulunamadı' : 'Henüz müşteri eklenmemiş' }}</p>
+      <button mat-raised-button color="primary"
+              *ngIf="!searchTerm && authService.isEmployee()"
+              (click)="addCustomer()">
+        İlk Müşteriyi Ekle
+      </button>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Müşteri Tablosu -->
+  <mat-card *ngIf="!isLoading && customers.length > 0">
+    <mat-card-content>
+      <table mat-table [dataSource]="customers" class="full-width">
+
+        <!-- Ad Soyad -->
+        <ng-container matColumnDef="fullName">
+          <th mat-header-cell *matHeaderCellDef>Müşteri</th>
+          <td mat-cell *matCellDef="let customer">
+            <strong>{{ customer.firstName }} {{ customer.lastName }}</strong>
+          </td>
+        </ng-container>
+
+        <!-- TC Kimlik -->
+        <ng-container matColumnDef="tcNumber">
+          <th mat-header-cell *matHeaderCellDef>TC Kimlik No</th>
+          <td mat-cell *matCellDef="let customer">
+            <span class="mono">{{ customer.tcNumber || '-' }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Telefon -->
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef>Telefon</th>
+          <td mat-cell *matCellDef="let customer">{{ customer.phone || '-' }}</td>
+        </ng-container>
+
+        <!-- E-posta -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>E-posta</th>
+          <td mat-cell *matCellDef="let customer">{{ customer.email || '-' }}</td>
+        </ng-container>
+
+        <!-- Şehir -->
+        <ng-container matColumnDef="city">
+          <th mat-header-cell *matHeaderCellDef>Şehir</th>
+          <td mat-cell *matCellDef="let customer">{{ customer.city || '-' }}</td>
+        </ng-container>
+
+        <!-- Aksiyonlar -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>İşlemler</th>
+          <td mat-cell *matCellDef="let customer">
+            <button mat-icon-button matTooltip="Detay"
+                    (click)="viewCustomer(customer)">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button color="accent" matTooltip="Düzenle"
+                    *ngIf="authService.isEmployee()"
+                    (click)="editCustomer(customer)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" matTooltip="Sil"
+                    *ngIf="authService.isManager()"
+                    (click)="deleteCustomer(customer)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+            class="clickable-row"
+            (click)="viewCustomer(row)"></tr>
+
+      </table>
+
+      <!-- Sayfalama -->
+      <mat-paginator [length]="totalElements"
+                     [pageSize]="pageSize"
+                     [pageSizeOptions]="[10, 20, 50]"
+                     [pageIndex]="currentPage"
+                     (page)="onPageChange($event)"
+                     showFirstLastButtons>
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+
+</div>

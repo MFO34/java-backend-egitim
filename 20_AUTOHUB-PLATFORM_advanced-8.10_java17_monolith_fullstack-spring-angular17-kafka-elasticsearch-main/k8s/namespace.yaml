@@ -1,0 +1,14 @@
+# Kubernetes Namespace Konfigürasyonu
+# AutoHub uygulaması için izole bir namespace oluşturur
+# Namespace, kaynakları mantıksal olarak ayırır ve izin yönetimini kolaylaştırır
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: autohub                    # Namespace adı
+  labels:
+    name: autohub
+    env: production
+    managed-by: kubectl
+  annotations:
+    description: "AutoHub Otomotiv Yönetim Sistemi"

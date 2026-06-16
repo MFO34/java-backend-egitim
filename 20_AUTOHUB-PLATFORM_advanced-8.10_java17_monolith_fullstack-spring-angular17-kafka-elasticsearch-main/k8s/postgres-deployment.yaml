@@ -1,0 +1,109 @@
+# PostgreSQL Kubernetes Konfigürasyonu
+# StatefulSet kullanılır - durumlu uygulama, stable network identity için
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres                   # StatefulSet adı
+  namespace: autohub               # AutoHub namespace'inde
+  labels:
+    app: postgres
+    component: database
+spec:
+  serviceName: postgres-service    # Headless service adı
+  replicas: 1                      # Tek PostgreSQL instance (üretimde HA için 3)
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            # Gizli bilgiler Secret'ten okunur
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: database
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+          # Kaynak limitleri - pod'un ne kadar CPU ve bellek kullanabileceğini sınırlar
+          resources:
+            requests:
+              memory: "256Mi"      # Minimum bellek isteği
+              cpu: "250m"          # 0.25 CPU core isteği
+            limits:
+              memory: "1Gi"        # Maksimum bellek limiti
+              cpu: "1000m"         # 1 CPU core limiti
+          # Sağlık kontrolü - PostgreSQL hazır mı?
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)", "-d", "$(POSTGRES_DB)"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          # Kalıcı depolama mount noktası
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres   # Alt dizin kullan
+  # Kalıcı Volume Talepleri (PVC)
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]   # Tek node tarafından okunup yazılabilir
+        resources:
+          requests:
+            storage: 10Gi              # 10 GB depolama alanı
+---
+# PostgreSQL Service - Cluster içi erişim için
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: autohub
+  labels:
+    app: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  clusterIP: None                        # Headless service - DNS tabanlı erişim
+---
+# PostgreSQL Secret - Hassas bilgileri saklar
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: autohub
+type: Opaque
+# NOT: Gerçek değerler base64 encode edilmiş olmalı
+# echo -n "autohub_db" | base64
+data:
+  database: YXV0b2h1Yl9kYg==      # autohub_db
+  username: YXV0b2h1Yl91c2Vy      # autohub_user
+  password: YXV0b2h1Yl9wYXNz      # autohub_pass

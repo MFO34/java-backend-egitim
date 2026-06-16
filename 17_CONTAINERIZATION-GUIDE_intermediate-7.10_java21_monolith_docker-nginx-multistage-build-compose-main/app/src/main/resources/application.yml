@@ -1,0 +1,133 @@
+# ==================== UYGULAMA YAPILANDIRMASI ====================
+# Docker Advanced Demo - Spring Boot 3.3.x & Java 21
+
+spring:
+  # Uygulama adı - servis keşfi ve loglarda görünür
+  application:
+    name: docker-advanced-demo
+
+  # ── VERİTABANI ──────────────────────────────────────────────────
+  datasource:
+    # PostgreSQL bağlantı URL - ortam değişkenlerinden okunur (Docker Compose tarafından set edilir)
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:dockerdb}
+    # Veritabanı kullanıcı adı
+    username: ${DB_USERNAME:postgres}
+    # Veritabanı şifresi
+    password: ${DB_PASSWORD:postgres123}
+    # PostgreSQL sürücüsü
+    driver-class-name: org.postgresql.Driver
+
+  # ── JPA / HIBERNATE ──────────────────────────────────────────────
+  jpa:
+    hibernate:
+      # update: mevcut veriyi koruyarak şemayı güncelle
+      ddl-auto: update
+    # SQL sorgularını loga yazma (prod'da false olmalı)
+    show-sql: false
+    properties:
+      hibernate:
+        # PostgreSQL diyalekti
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # ── REDİS ────────────────────────────────────────────────────────
+  data:
+    redis:
+      # Redis sunucusu - Docker Compose'da servis adı olarak "redis" kullanılır
+      host: ${REDIS_HOST:localhost}
+      # Redis port
+      port: ${REDIS_PORT:6379}
+      # Redis şifresi (boş bırakılırsa şifresiz)
+      password: ${REDIS_PASSWORD:}
+      # Bağlantı zaman aşımı
+      timeout: 2000ms
+      # Lettuce bağlantı havuzu
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
+          min-idle: 1
+
+  # ── VIRTUAL THREADS (Java 21) ────────────────────────────────────
+  threads:
+    virtual:
+      # Java 21 sanal thread'lerini etkinleştir - yüksek eşzamanlılık için
+      enabled: true
+
+# ── SUNUCU ────────────────────────────────────────────────────────
+server:
+  # HTTP port - Docker Compose'da override edilebilir
+  port: ${SERVER_PORT:8080}
+  # Tüm endpoint'lerin prefix'i
+  servlet:
+    context-path: /
+
+# ── ACTUATOR ─────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        # Erişilebilir actuator endpoint'leri
+        include: health,info,metrics,env
+      # Actuator base path
+      base-path: /actuator
+  endpoint:
+    health:
+      # Detaylı sağlık durumu (Docker HEALTHCHECK için önemli)
+      show-details: always
+      # Bileşen sağlık durumlarını göster (DB, Redis vb.)
+      show-components: always
+
+# ── UYGULAMA ÖZELLIKLERI ─────────────────────────────────────────
+app:
+  # Instance adı - Docker Compose'da INSTANCE_NAME env değişkeniyle set edilir
+  instance-name: ${INSTANCE_NAME:local}
+  # Uygulama sürümü
+  version: ${APP_VERSION:1.0.0}
+
+# ── LOG ──────────────────────────────────────────────────────────
+logging:
+  level:
+    # Uygulama paketinin log seviyesi
+    com.dockerdemo: INFO
+    # Spring Web log seviyesi
+    org.springframework.web: WARN
+  pattern:
+    # Log formatı - instance adını ekle (hangi container log yazdı?)
+    console: "%d{HH:mm:ss} [%thread] %-5level [${INSTANCE_NAME:local}] %logger{20} - %msg%n"
+
+---
+# ==================== GELİŞTİRME PROFİLİ ====================
+# docker-compose.dev.yml'de SPRING_PROFILES_ACTIVE=dev olarak set edilir
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  # Geliştirme ortamında SQL sorgularını göster
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    # Geliştirmede daha ayrıntılı log
+    com.dockerdemo: DEBUG
+    org.springframework.web: DEBUG
+
+---
+# ==================== ÜRETİM PROFİLİ ====================
+# docker-compose.prod.yml'de SPRING_PROFILES_ACTIVE=prod olarak set edilir
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  # Üretimde şema otomatik değişmesin
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    # Üretimde sadece uyarı ve üstü
+    com.dockerdemo: WARN
+    org.springframework.web: ERROR

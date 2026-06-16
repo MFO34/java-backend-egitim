@@ -1,0 +1,100 @@
+<!-- Marka Listesi Template -->
+<div class="list-container">
+
+  <!-- Sayfa Başlığı ve Aksiyonlar -->
+  <div class="page-header">
+    <div class="header-title">
+      <mat-icon>branding_watermark</mat-icon>
+      <h2>Markalar</h2>
+    </div>
+    <button mat-raised-button color="primary"
+            *ngIf="authService.isManager()"
+            (click)="addBrand()">
+      <mat-icon>add</mat-icon> Yeni Marka
+    </button>
+  </div>
+
+  <!-- Yükleniyor -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+
+  <!-- Boş Durum -->
+  <mat-card *ngIf="!isLoading && brands.length === 0" class="empty-state">
+    <mat-card-content>
+      <mat-icon>branding_watermark</mat-icon>
+      <p>Henüz marka eklenmemiş</p>
+      <button mat-raised-button color="primary"
+              *ngIf="authService.isManager()"
+              (click)="addBrand()">
+        İlk Markayı Ekle
+      </button>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Marka Tablosu -->
+  <mat-card *ngIf="!isLoading && brands.length > 0">
+    <mat-card-content>
+      <table mat-table [dataSource]="brands" class="full-width">
+
+        <!-- Marka Adı -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Marka</th>
+          <td mat-cell *matCellDef="let brand">
+            <strong>{{ brand.name }}</strong>
+          </td>
+        </ng-container>
+
+        <!-- Ülke -->
+        <ng-container matColumnDef="country">
+          <th mat-header-cell *matHeaderCellDef>Menşei</th>
+          <td mat-cell *matCellDef="let brand">{{ brand.country || '-' }}</td>
+        </ng-container>
+
+        <!-- Model Sayısı -->
+        <ng-container matColumnDef="modelCount">
+          <th mat-header-cell *matHeaderCellDef>Model Sayısı</th>
+          <td mat-cell *matCellDef="let brand">
+            <mat-chip>{{ brand.modelCount || 0 }}</mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Durum -->
+        <ng-container matColumnDef="isActive">
+          <th mat-header-cell *matHeaderCellDef>Durum</th>
+          <td mat-cell *matCellDef="let brand">
+            <span class="status-chip" [class.active]="brand.isActive" [class.inactive]="!brand.isActive">
+              {{ brand.isActive ? 'Aktif' : 'Pasif' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Aksiyonlar -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>İşlemler</th>
+          <td mat-cell *matCellDef="let brand">
+            <button mat-icon-button matTooltip="Araçları Gör"
+                    (click)="viewVehicles(brand)">
+              <mat-icon>directions_car</mat-icon>
+            </button>
+            <button mat-icon-button color="accent" matTooltip="Düzenle"
+                    *ngIf="authService.isManager()"
+                    (click)="editBrand(brand)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" matTooltip="Sil"
+                    *ngIf="authService.isAdmin()"
+                    (click)="deleteBrand(brand)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      </table>
+    </mat-card-content>
+  </mat-card>
+
+</div>

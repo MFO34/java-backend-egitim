@@ -1,0 +1,111 @@
+<!-- İşlem Formu Template - Kiralama veya Satış oluşturma -->
+<div class="form-container">
+  <mat-card>
+
+    <!-- Başlık -->
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>add_circle</mat-icon>
+        Yeni İşlem Oluştur
+      </mat-card-title>
+      <mat-card-subtitle>Kiralama veya satış işlemi başlatın</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="transactionForm" (ngSubmit)="onSubmit()">
+
+        <!-- İŞLEM TÜRÜ -->
+        <h3 class="section-title">İşlem Türü</h3>
+        <mat-divider></mat-divider>
+
+        <div class="radio-group">
+          <mat-radio-group formControlName="transactionType" class="type-radio-group">
+            <mat-radio-button [value]="TransactionType.RENTAL" class="rental-radio">
+              <mat-icon>key</mat-icon> Kiralama
+            </mat-radio-button>
+            <mat-radio-button [value]="TransactionType.SALE" class="sale-radio">
+              <mat-icon>sell</mat-icon> Satış
+            </mat-radio-button>
+          </mat-radio-group>
+        </div>
+
+        <!-- ARAÇ VE MÜŞTERİ SEÇİMİ -->
+        <h3 class="section-title">Araç ve Müşteri</h3>
+        <mat-divider></mat-divider>
+
+        <div class="form-row">
+          <!-- Araç Seçimi (sadece uygun araçlar) -->
+          <mat-form-field appearance="outline">
+            <mat-label>Araç Seçin *</mat-label>
+            <mat-select formControlName="vehicleId">
+              <mat-option *ngFor="let v of availableVehicles" [value]="v.id">
+                {{ v.brandName }} {{ v.modelName }} — {{ v.licensePlate }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>directions_car</mat-icon>
+            <mat-hint>Sadece uygun araçlar listelenmektedir</mat-hint>
+            <mat-error *ngIf="f['vehicleId'].errors?.['required']">Araç seçimi zorunludur</mat-error>
+          </mat-form-field>
+
+          <!-- Müşteri Seçimi -->
+          <mat-form-field appearance="outline">
+            <mat-label>Müşteri Seçin *</mat-label>
+            <mat-select formControlName="customerId">
+              <mat-option *ngFor="let c of customers" [value]="c.id">
+                {{ c.firstName }} {{ c.lastName }}
+                <span *ngIf="c.phone"> — {{ c.phone }}</span>
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>person</mat-icon>
+            <mat-error *ngIf="f['customerId'].errors?.['required']">Müşteri seçimi zorunludur</mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- TARİH BİLGİLERİ -->
+        <h3 class="section-title">Tarih Bilgileri</h3>
+        <mat-divider></mat-divider>
+
+        <div class="form-row">
+          <!-- Başlangıç Tarihi -->
+          <mat-form-field appearance="outline">
+            <mat-label>Başlangıç Tarihi *</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+            <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+            <mat-error *ngIf="f['startDate'].errors?.['required']">Başlangıç tarihi zorunludur</mat-error>
+          </mat-form-field>
+
+          <!-- Bitiş Tarihi (sadece kiralama için) -->
+          <mat-form-field appearance="outline" *ngIf="isRental">
+            <mat-label>Bitiş Tarihi *</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+            <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+            <mat-error *ngIf="f['endDate'].errors?.['required']">Kiralama için bitiş tarihi zorunludur</mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Notlar -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Notlar</mat-label>
+          <textarea matInput formControlName="notes"
+                    rows="3" placeholder="İşlem hakkında ek bilgiler..."></textarea>
+          <mat-hint align="end">{{ f['notes'].value?.length || 0 }}/500</mat-hint>
+        </mat-form-field>
+
+        <!-- FORM BUTONLARI -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()" [disabled]="isLoading">
+            <mat-icon>close</mat-icon> İptal
+          </button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+            <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+            <mat-icon *ngIf="!isLoading">check_circle</mat-icon>
+            <span *ngIf="!isLoading">İşlemi Oluştur</span>
+          </button>
+        </div>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

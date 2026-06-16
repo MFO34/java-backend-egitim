@@ -1,0 +1,26 @@
+# Maven derleme çıktısı
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Ortam değişkenleri — ŞİFRELER BURADA, ASLA commit'leme!
+.env
+
+# IDE dosyaları
+.idea/
+*.iml
+.vscode/
+*.classpath
+*.project
+.settings/
+
+# macOS sistem dosyaları
+.DS_Store
+Thumbs.db
+
+# Log dosyaları
+*.log
+logs/
+
+# Geçici dosyalar
+*.tmp
+*.swp

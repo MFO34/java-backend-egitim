@@ -1,0 +1,39 @@
+# ── ORTAM DEĞİŞKENLERİ (ŞİFRELER BURADA!) ────────────────────────────────────
+# .env gerçek şifreler içerir - asla commit'leme!
+.env
+.env.local
+.env.*.local
+
+# ── MAVEN DERLEME ÇIKTILARI ──────────────────────────────────────────────────
+app/target/
+**/target/
+
+# ── IDE ─────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# ── DOCKER VOLUME VERİSİ ──────────────────────────────────────────────────────
+pgdata/
+redis-data/
+pgadmin-data/
+
+# ── LOG DOSYALARI ────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── SSL SERTİFİKALARI ────────────────────────────────────────────────────────
+nginx/ssl/*.pem
+nginx/ssl/*.crt
+nginx/ssl/*.key
+
+# ── YEDEK DOSYALAR ────────────────────────────────────────────────────────────
+*.bak
+backups/
+
+# ── İŞLETİM SİSTEMİ ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

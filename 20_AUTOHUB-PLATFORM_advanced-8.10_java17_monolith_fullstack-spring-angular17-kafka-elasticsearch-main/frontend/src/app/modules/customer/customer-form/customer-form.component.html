@@ -1,0 +1,138 @@
+<!-- Müşteri Formu Template -->
+<div class="form-container">
+  <mat-card>
+
+    <!-- Başlık -->
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>{{ isEditMode ? 'edit' : 'person_add' }}</mat-icon>
+        {{ pageTitle }}
+      </mat-card-title>
+      <mat-card-subtitle>
+        {{ isEditMode ? 'Müşteri bilgilerini güncelleyin' : 'Yeni müşteri kaydı oluşturun' }}
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="customerForm" (ngSubmit)="onSubmit()">
+
+        <!-- KİŞİSEL BİLGİLER -->
+        <h3 class="section-title">Kişisel Bilgiler</h3>
+        <mat-divider></mat-divider>
+
+        <div class="form-row">
+          <!-- Ad -->
+          <mat-form-field appearance="outline">
+            <mat-label>Ad *</mat-label>
+            <input matInput formControlName="firstName" placeholder="Ahmet">
+            <mat-icon matSuffix>person</mat-icon>
+            <mat-error *ngIf="f['firstName'].errors?.['required']">Ad zorunludur</mat-error>
+            <mat-error *ngIf="f['firstName'].errors?.['minlength']">En az 2 karakter giriniz</mat-error>
+          </mat-form-field>
+
+          <!-- Soyad -->
+          <mat-form-field appearance="outline">
+            <mat-label>Soyad *</mat-label>
+            <input matInput formControlName="lastName" placeholder="Yılmaz">
+            <mat-icon matSuffix>person</mat-icon>
+            <mat-error *ngIf="f['lastName'].errors?.['required']">Soyad zorunludur</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <!-- TC Kimlik No -->
+          <mat-form-field appearance="outline">
+            <mat-label>TC Kimlik No</mat-label>
+            <input matInput formControlName="tcNumber" placeholder="12345678901"
+                   maxlength="11" inputmode="numeric">
+            <mat-icon matSuffix>badge</mat-icon>
+            <mat-hint>11 rakamdan oluşmalıdır</mat-hint>
+            <mat-error *ngIf="f['tcNumber'].errors?.['pattern'] || f['tcNumber'].errors?.['minlength']">
+              Geçerli bir TC kimlik numarası giriniz (11 rakam)
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Doğum Tarihi -->
+          <mat-form-field appearance="outline">
+            <mat-label>Doğum Tarihi</mat-label>
+            <input matInput formControlName="birthDate" type="date">
+            <mat-icon matSuffix>cake</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- İLETİŞİM BİLGİLERİ -->
+        <h3 class="section-title">İletişim Bilgileri</h3>
+        <mat-divider></mat-divider>
+
+        <div class="form-row">
+          <!-- Telefon -->
+          <mat-form-field appearance="outline">
+            <mat-label>Telefon *</mat-label>
+            <input matInput formControlName="phone" placeholder="05XX XXX XX XX">
+            <mat-icon matSuffix>phone</mat-icon>
+            <mat-error *ngIf="f['phone'].errors?.['required']">Telefon zorunludur</mat-error>
+            <mat-error *ngIf="f['phone'].errors?.['pattern']">Geçerli bir telefon numarası giriniz</mat-error>
+          </mat-form-field>
+
+          <!-- E-posta -->
+          <mat-form-field appearance="outline">
+            <mat-label>E-posta</mat-label>
+            <input matInput formControlName="email" placeholder="ahmet@example.com" type="email">
+            <mat-icon matSuffix>email</mat-icon>
+            <mat-error *ngIf="f['email'].errors?.['email']">Geçerli bir e-posta giriniz</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <!-- Şehir -->
+          <mat-form-field appearance="outline">
+            <mat-label>Şehir</mat-label>
+            <mat-select formControlName="city">
+              <mat-option value="">Seçiniz</mat-option>
+              <mat-option *ngFor="let city of cities" [value]="city">
+                {{ city }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>location_city</mat-icon>
+          </mat-form-field>
+
+          <!-- Ehliyet Numarası -->
+          <mat-form-field appearance="outline">
+            <mat-label>Ehliyet Numarası</mat-label>
+            <input matInput formControlName="drivingLicenseNumber" placeholder="01AA12345">
+            <mat-icon matSuffix>drive_eta</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Adres -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Adres</mat-label>
+          <textarea matInput formControlName="address"
+                    rows="2" placeholder="Açık adres..."></textarea>
+          <mat-icon matSuffix>home</mat-icon>
+        </mat-form-field>
+
+        <!-- Notlar -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Notlar</mat-label>
+          <textarea matInput formControlName="notes"
+                    rows="3" placeholder="Müşteri hakkında ek bilgiler..."></textarea>
+          <mat-hint align="end">{{ f['notes'].value?.length || 0 }}/1000</mat-hint>
+        </mat-form-field>
+
+        <!-- FORM BUTONLARI -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()" [disabled]="isLoading">
+            <mat-icon>close</mat-icon> İptal
+          </button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+            <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+            <mat-icon *ngIf="!isLoading">{{ isEditMode ? 'save' : 'person_add' }}</mat-icon>
+            <span *ngIf="!isLoading">{{ isEditMode ? 'Güncelle' : 'Kaydet' }}</span>
+          </button>
+        </div>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

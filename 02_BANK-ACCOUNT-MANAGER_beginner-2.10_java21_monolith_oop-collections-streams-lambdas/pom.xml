@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!-- Maven proje model versiyonu - her zaman 4.0.0 olmalı -->
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Projenin kimlik bilgileri -->
+    <groupId>com.banka</groupId>           <!-- Organizasyon/paket adı -->
+    <artifactId>banka-hesap-yonetim</artifactId> <!-- Proje adı -->
+    <version>1.0.0</version>               <!-- Versiyon numarası -->
+    <packaging>jar</packaging>             <!-- Çıktı tipi: çalıştırılabilir JAR -->
+
+    <!-- Proje hakkında bilgi -->
+    <name>Banka Hesap Yönetim Sistemi</name>
+    <description>Core Java konularını öğrenmek için geliştirilmiş banka uygulaması</description>
+
+    <!-- Java özellikleri ve derleme ayarları -->
+    <properties>
+        <!-- Kaynak kodun hangi Java versiyonuyla yazıldığı -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <!-- Derlenmiş kodun hangi Java versiyonuyla uyumlu olacağı -->
+        <maven.compiler.target>17</maven.compiler.target>
+        <!-- Dosya karakter kodlaması: Türkçe karakter sorununu önler -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <!-- Build eklentileri -->
+    <build>
+        <plugins>
+            <!-- Çalıştırılabilir (executable) JAR oluşturma eklentisi -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <!-- Program başladığında çalışacak ana sınıf -->
+                            <mainClass>com.banka.app.BankApp</mainClass>
+                        </manifest>
+                    </archive>
+                    <!-- JAR dosyasının adı -->
+                    <finalName>banka-hesap-yonetim</finalName>
+                </configuration>
+            </plugin>
+
+            <!-- Maven derleyici eklentisi: Java 17 özelliklerini destekler -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <release>17</release>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

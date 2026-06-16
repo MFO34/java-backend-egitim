@@ -1,0 +1,83 @@
+<!-- Dashboard Template -->
+<div class="dashboard-container">
+
+  <!-- Hoş Geldiniz Başlığı -->
+  <div class="welcome-banner">
+    <h1>Hoş Geldiniz, {{ (authService.currentUser$ | async)?.fullName }}!</h1>
+    <p>AutoHub Otomotiv Yönetim Sistemine Hoş Geldiniz</p>
+  </div>
+
+  <!-- İstatistik Kartları -->
+  <div class="stats-grid" *ngIf="vehicleStats">
+
+    <!-- Müsait Araçlar -->
+    <mat-card class="stat-card available">
+      <mat-card-content>
+        <mat-icon>check_circle</mat-icon>
+        <div class="stat-info">
+          <span class="stat-value">{{ vehicleStats.AVAILABLE }}</span>
+          <span class="stat-label">Müsait Araç</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Kiralanmış Araçlar -->
+    <mat-card class="stat-card rented">
+      <mat-card-content>
+        <mat-icon>directions_car</mat-icon>
+        <div class="stat-info">
+          <span class="stat-value">{{ vehicleStats.RENTED }}</span>
+          <span class="stat-label">Kiralanan Araç</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Satılmış Araçlar -->
+    <mat-card class="stat-card sold">
+      <mat-card-content>
+        <mat-icon>sell</mat-icon>
+        <div class="stat-info">
+          <span class="stat-value">{{ vehicleStats.SOLD }}</span>
+          <span class="stat-label">Satılan Araç</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Bakımdaki Araçlar -->
+    <mat-card class="stat-card maintenance">
+      <mat-card-content>
+        <mat-icon>build</mat-icon>
+        <div class="stat-info">
+          <span class="stat-value">{{ vehicleStats.MAINTENANCE }}</span>
+          <span class="stat-label">Bakımdaki Araç</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  <!-- Yükleniyor -->
+  <div class="loading-container" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Yükleniyor...</p>
+  </div>
+
+  <!-- Son Eklenen Araçlar -->
+  <div class="latest-vehicles" *ngIf="latestVehicles.length > 0">
+    <h2>Son Eklenen Araçlar</h2>
+    <div class="vehicles-grid">
+      <mat-card *ngFor="let vehicle of latestVehicles" class="vehicle-card"
+                routerLink="/vehicles/{{ vehicle.id }}">
+        <mat-card-header>
+          <mat-card-title>{{ vehicle.licensePlate }}</mat-card-title>
+          <mat-card-subtitle>{{ vehicle.brandName }} {{ vehicle.modelName }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p>{{ vehicle.year }} | {{ vehicle.color }}</p>
+          <p class="price">{{ vehicle.price | currency:'TRY':'symbol':'1.0-0':'tr' }}</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+</div>

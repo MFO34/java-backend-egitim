@@ -1,0 +1,167 @@
+<!-- Araç Listesi Template -->
+<div class="vehicle-list-container">
+
+  <!-- Sayfa Başlığı ve Eylem Butonları -->
+  <div class="page-header">
+    <h1>
+      <mat-icon>directions_car</mat-icon>
+      Araç Yönetimi
+    </h1>
+    <!-- Sadece yetkili kullanıcılar yeni araç ekleyebilir -->
+    <button mat-raised-button color="primary"
+            *ngIf="authService.isManager()"
+            (click)="createVehicle()">
+      <mat-icon>add</mat-icon>
+      Yeni Araç Ekle
+    </button>
+  </div>
+
+  <!-- Arama ve Filtreleme Paneli -->
+  <mat-card class="filter-card">
+    <mat-card-content>
+      <div class="filter-row">
+
+        <!-- Arama Kutusu -->
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Araç Ara</mat-label>
+          <input matInput [formControl]="searchControl"
+                 placeholder="Plaka, marka, model...">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Durum Filtresi -->
+        <mat-form-field appearance="outline" class="status-filter">
+          <mat-label>Durum Filtrele</mat-label>
+          <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onStatusFilterChange()">
+            <mat-option value="">Tüm Durumlar</mat-option>
+            <mat-option *ngFor="let status of vehicleStatuses" [value]="status">
+              {{ statusLabels[status] }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Filtre Temizle -->
+        <button mat-stroked-button (click)="clearFilters()">
+          <mat-icon>clear</mat-icon>
+          Temizle
+        </button>
+
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Araç Tablosu -->
+  <mat-card>
+    <mat-card-content>
+
+      <!-- Yükleme Çubuğu -->
+      <mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+
+      <!-- Veri Tablosu -->
+      <table mat-table [dataSource]="dataSource" matSort class="vehicle-table">
+
+        <!-- Plaka Sütunu -->
+        <ng-container matColumnDef="licensePlate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Plaka</th>
+          <td mat-cell *matCellDef="let vehicle">
+            <strong>{{ vehicle.licensePlate }}</strong>
+          </td>
+        </ng-container>
+
+        <!-- Marka Sütunu -->
+        <ng-container matColumnDef="brand">
+          <th mat-header-cell *matHeaderCellDef>Marka</th>
+          <td mat-cell *matCellDef="let vehicle">{{ vehicle.brandName }}</td>
+        </ng-container>
+
+        <!-- Model Sütunu -->
+        <ng-container matColumnDef="model">
+          <th mat-header-cell *matHeaderCellDef>Model</th>
+          <td mat-cell *matCellDef="let vehicle">{{ vehicle.modelName }}</td>
+        </ng-container>
+
+        <!-- Yıl Sütunu -->
+        <ng-container matColumnDef="year">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Yıl</th>
+          <td mat-cell *matCellDef="let vehicle">{{ vehicle.year }}</td>
+        </ng-container>
+
+        <!-- Renk Sütunu -->
+        <ng-container matColumnDef="color">
+          <th mat-header-cell *matHeaderCellDef>Renk</th>
+          <td mat-cell *matCellDef="let vehicle">{{ vehicle.color }}</td>
+        </ng-container>
+
+        <!-- Fiyat Sütunu -->
+        <ng-container matColumnDef="price">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Fiyat</th>
+          <td mat-cell *matCellDef="let vehicle">
+            {{ vehicle.price | currency:'TRY':'symbol':'1.0-0':'tr' }}
+          </td>
+        </ng-container>
+
+        <!-- Durum Sütunu -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Durum</th>
+          <td mat-cell *matCellDef="let vehicle">
+            <span class="status-badge" [ngClass]="getStatusClass(vehicle.status)">
+              {{ statusLabels[vehicle.status] }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Eylemler Sütunu -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>İşlemler</th>
+          <td mat-cell *matCellDef="let vehicle">
+            <!-- Detay butonu - herkese açık -->
+            <button mat-icon-button color="primary"
+                    (click)="viewVehicle(vehicle.id)"
+                    matTooltip="Detay Görüntüle">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <!-- Düzenleme butonu - sadece yetkili kullanıcılara -->
+            <button mat-icon-button color="accent"
+                    *ngIf="authService.isManager()"
+                    (click)="editVehicle(vehicle.id)"
+                    matTooltip="Düzenle">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <!-- Silme butonu - sadece admin -->
+            <button mat-icon-button color="warn"
+                    *ngIf="authService.isAdmin()"
+                    (click)="deleteVehicle(vehicle)"
+                    matTooltip="Sil">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <!-- Tablo Başlık ve Veri Satırları -->
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+            class="vehicle-row" (click)="viewVehicle(row.id)"></tr>
+
+        <!-- Veri yoksa mesaj -->
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
+            <mat-icon>search_off</mat-icon>
+            <p>Araç bulunamadı</p>
+          </td>
+        </tr>
+
+      </table>
+
+      <!-- Sayfalama -->
+      <mat-paginator
+        [length]="totalElements"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+
+    </mat-card-content>
+  </mat-card>
+
+</div>

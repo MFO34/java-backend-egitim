@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    LİQUİBASE MASTER CHANGELOG
+    ===========================
+    Bu dosya tüm değişiklik dosyalarını (changeset) içerir.
+    Liquibase her uygulama başlangıcında bu dosyayı okur.
+
+    DATABASECHANGELOG tablosu:
+    - Her başarılı changeset buraya kaydedilir
+    - Bir dahaki başlangıçta sadece YENİ changeset'ler çalışır
+    - Çalışmış changeset tekrar çalıştırılmaz (MD5 kontrolü)
+
+    INCLUDE SIRASI ÖNEMLİ:
+    - Önce tablo oluşturma (001)
+    - Sonra örnek veri (002)
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Tablo oluşturma migration'ı -->
+    <include file="db/changelog/changes/001-create-tables.xml"
+             relativeToChangelogFile="false"/>
+
+    <!-- Örnek veri migration'ı -->
+    <include file="db/changelog/changes/002-insert-sample-data.xml"
+             relativeToChangelogFile="false"/>
+
+</databaseChangeLog>

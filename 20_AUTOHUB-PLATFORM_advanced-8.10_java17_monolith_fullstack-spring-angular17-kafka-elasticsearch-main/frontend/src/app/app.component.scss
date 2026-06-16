@@ -1,0 +1,43 @@
+/* AutoHub Global Stil Tanımlamaları */
+
+/* Uygulama kapsayıcısı - tüm ekranı kaplar */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;       /* Minimum viewport yüksekliği */
+}
+
+/* Üst toolbar stili */
+.app-toolbar {
+  position: sticky;         /* Scroll sırasında üstte sabit kalır */
+  top: 0;
+  z-index: 1000;            /* Diğer içeriklerin üzerinde */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Toolbar başlığı */
+.app-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Toolbar boşluk doldurucu - sağdaki elementleri sağa iter */
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+/* Ana içerik alanı */
+.main-content {
+  flex: 1;                  /* Kalan alanı doldur */
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+/* Global spinner stili - sayfa ortasında gösterilir */
+.global-spinner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+}

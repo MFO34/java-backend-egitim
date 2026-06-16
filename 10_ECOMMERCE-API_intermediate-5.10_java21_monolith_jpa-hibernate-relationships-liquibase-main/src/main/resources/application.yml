@@ -1,0 +1,93 @@
+# =============================================================
+# ANA UYGULAMA YAPILANDIRMASI
+# Profil özel ayarlar application-dev.yml / application-prod.yml'de
+# =============================================================
+
+spring:
+  application:
+    name: eticaret-api
+
+  # ===== VERİTABANI BAĞLANTISI =====
+  datasource:
+    # Docker içinde: jdbc:postgresql://db:5432/eticaret_db
+    # Yerel çalıştırmada: jdbc:postgresql://localhost:5432/eticaret_db
+    url: jdbc:postgresql://localhost:5432/eticaret_db
+    username: eticaret_user
+    password: eticaret_pass
+    driver-class-name: org.postgresql.Driver
+
+    # HikariCP — Spring Boot'un varsayılan connection pool'u
+    hikari:
+      pool-name: EticaretHikariPool
+      minimum-idle: 5           # En az 5 bağlantı hazırda bekle
+      maximum-pool-size: 20     # Maksimum 20 eş zamanlı bağlantı
+      idle-timeout: 600000      # Boş bağlantıyı 10 dakika sonra kapat
+      connection-timeout: 30000 # 30 saniye içinde bağlantı kuramazsa hata
+      max-lifetime: 1800000     # Bağlantı maksimum 30 dakika yaşar
+
+  # ===== JPA / HIBERNATE =====
+  jpa:
+    hibernate:
+      # validate: Liquibase schema'yı yönetir, Hibernate sadece kontrol eder
+      # update: dev'de kullanılabilir, prod'da ASLA
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true           # SQL'i güzel formatla (log için)
+        default_batch_fetch_size: 20  # N+1 sorununu azaltır (@BatchSize varsayılanı)
+        jdbc:
+          batch_size: 25           # Toplu INSERT/UPDATE için batch boyutu
+          order_inserts: true      # INSERT'leri gruplama için sırala
+          order_updates: true      # UPDATE'leri gruplama için sırala
+    open-in-view: false            # Anti-pattern'i kapat (lazy loading controller'da olmasın)
+
+  # ===== LİQUİBASE — VERİTABANI MİGRASYONU =====
+  liquibase:
+    enabled: true
+    # Master changelog — diğer tüm changelog'ları include eder
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    # Her başlangıçta migration'ları kontrol et ve uygula
+
+  # ===== JACKSON (JSON) =====
+  jackson:
+    property-naming-strategy: SNAKE_CASE  # camelCase → snake_case
+    default-property-inclusion: non_null  # null alanları JSON'a yazma
+    serialization:
+      write-dates-as-timestamps: false    # Tarih → ISO-8601 string
+
+# ===== SWAGGER / OPENAPI =====
+springdoc:
+  api-docs:
+    path: /api-docs              # OpenAPI JSON: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html       # Swagger UI: /swagger-ui.html
+    operations-sorter: method    # HTTP metoduna göre sırala
+    tags-sorter: alpha           # Tag'e göre alfabetik sırala
+
+# ===== SPRING ACTUATOR =====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info     # Sadece health ve info açık
+  endpoint:
+    health:
+      show-details: when-authorized  # Detayları sadece yetkililere göster
+
+# ===== SUNUCU =====
+server:
+  port: 8080
+  error:
+    include-message: always      # Hata mesajlarını yanıta dahil et
+    include-binding-errors: always
+
+# ===== UYGULAMA ÖZEL AYARLAR =====
+eticaret:
+  pagination:
+    default-page-size: 20        # Varsayılan sayfa boyutu
+    max-page-size: 100           # Maksimum sayfa boyutu
+  stock:
+    low-stock-threshold: 10      # Bu miktarın altı "düşük stok"
+  order:
+    max-items-per-order: 50      # Bir siparişte maksimum ürün sayısı

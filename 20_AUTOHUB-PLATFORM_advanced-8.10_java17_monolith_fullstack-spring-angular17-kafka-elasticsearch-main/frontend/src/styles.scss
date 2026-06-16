@@ -1,0 +1,42 @@
+/* AutoHub Global Stil Dosyası */
+
+/* Angular Material tema importu */
+@use '@angular/material' as mat;
+
+/* Material tema tanımlama - mavi primary, sarı accent */
+@include mat.core();
+
+$autohub-primary: mat.define-palette(mat.$indigo-palette);
+$autohub-accent: mat.define-palette(mat.$amber-palette);
+$autohub-warn: mat.define-palette(mat.$red-palette);
+
+$autohub-theme: mat.define-light-theme((
+  color: (
+    primary: $autohub-primary,
+    accent: $autohub-accent,
+    warn: $autohub-warn,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+@include mat.all-component-themes($autohub-theme);
+
+/* Global sıfırlama */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-color: #f5f5f5;
+}
+
+/* Bildirim toast stilleri */
+.success-snackbar { background-color: #4caf50; color: white; }
+.error-snackbar { background-color: #f44336; color: white; }
+.warning-snackbar { background-color: #ff9800; color: white; }
+.info-snackbar { background-color: #2196f3; color: white; }

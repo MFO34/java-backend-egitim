@@ -1,0 +1,165 @@
+# ==============================================================================
+# Docker Compose - ÜRETİM ORTAMI OVERRIDE
+# ==============================================================================
+#
+# Bu dosya temel docker-compose.yml dosyasını üretim ortamı için OVERRIDE eder.
+# Temel dosyayla birlikte kullanılır:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   veya Makefile ile:
+#   make prod
+#
+# Üretim ortamı özellikleri:
+#   ✓ Yüksek kaynak limitleri
+#   ✓ Üretim Spring profili (minimal log, şema doğrulama)
+#   ✓ Debug portları KAPALI (güvenlik)
+#   ✓ Sağlık kontrolleri daha sık
+#   ✓ Log rotasyonu aktif
+#   ✓ Restart politikası: always
+#   ✓ Güvenli ortam değişkenleri (secrets)
+#   ✗ Debug/geliştirme araçları yok
+#   ✗ Kaynak kodu bind mount yok
+#   ✗ Veritabanı portu dışarıya açık değil
+# ==============================================================================
+
+services:
+
+  # ── APP1 ÜRETİM OVERRIDE ─────────────────────────────────────────────────
+  app1:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        # Üretim build profili
+        BUILD_PROFILE: prod
+    environment:
+      # Üretim profili aktif
+      - SPRING_PROFILES_ACTIVE=prod
+      # Üretim ortamı flag
+      - APP_ENV=production
+      # JVM üretim optimizasyonu
+      # -XX:+UseG1GC: G1 Garbage Collector (büyük heap için)
+      # -XX:+HeapDumpOnOutOfMemoryError: OOM'da heap dump al
+      - JAVA_OPTS=-Xms512m -Xmx1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+    # Üretimde yüksek kaynak limiti
+    deploy:
+      resources:
+        limits:
+          # Tek çekirdek
+          cpus: '1.0'
+          # 1 GB RAM
+          memory: 1G
+        reservations:
+          # Minimum yarım çekirdek
+          cpus: '0.5'
+          # Minimum 512MB RAM
+          memory: 512M
+    # Üretimde her zaman yeniden başlat
+    restart: always
+    # Üretim log ayarları - daha küçük dosyalar, daha fazla rotasyon
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+
+  # ── APP2 ÜRETİM OVERRIDE ─────────────────────────────────────────────────
+  app2:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        BUILD_PROFILE: prod
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - APP_ENV=production
+      - JAVA_OPTS=-Xms512m -Xmx1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+
+  # ── NGINX ÜRETİM OVERRIDE ─────────────────────────────────────────────────
+  nginx:
+    # Üretimde gerçek SSL sertifikalarını bağla
+    volumes:
+      # Nginx konfigürasyonu
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # SSL sertifikaları (Let's Encrypt veya özel sertifika)
+      # - /etc/letsencrypt:/etc/nginx/ssl:ro
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+
+  # ── VERİTABANI ÜRETİM OVERRIDE ────────────────────────────────────────────
+  db:
+    # Üretimde PostgreSQL portunu dışarıya AÇMA (güvenlik!)
+    # Sadece aynı Docker ağındaki servisler erişebilir
+    ports: !reset []
+    # Üretim PostgreSQL optimizasyonu
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      # PostgreSQL performans ayarları
+      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # ── REDIS ÜRETİM OVERRIDE ─────────────────────────────────────────────────
+  redis:
+    # Üretimde Redis portunu dışarıya AÇMA (güvenlik!)
+    ports: !reset []
+    # Üretim Redis komutu - şifre ile çalıştır
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+      --loglevel warning
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ── ÜRETİMDE ARAÇ SERVİSLERİ ─────────────────────────────────────────────
+  # Üretimde Redis Commander ve pgAdmin çalışmasın (güvenlik riski!)
+  # Gerekirse sadece VPN üzerinden erişilebilir yapın
+  redis-commander:
+    # profiles: [tools] ile sadece özellikle çağrıldığında çalışsın
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  pgadmin:
+    deploy:
+      resources:
+        limits:
+          memory: 256M

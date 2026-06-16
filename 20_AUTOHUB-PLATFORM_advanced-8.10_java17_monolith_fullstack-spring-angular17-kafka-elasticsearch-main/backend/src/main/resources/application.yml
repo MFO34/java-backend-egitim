@@ -1,0 +1,173 @@
+# AutoHub Backend Uygulama Konfigürasyonu
+# Bu dosya tüm servis bağlantı ayarlarını ve uygulama parametrelerini içerir
+
+spring:
+  application:
+    # Uygulama adı - Consul servis keşfinde bu isim kullanılır
+    name: autohub-backend
+
+  # PostgreSQL Veritabanı Bağlantı Ayarları
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:autohub_db}
+    username: ${DB_USERNAME:autohub_user}
+    password: ${DB_PASSWORD:autohub_pass}
+    # HikariCP bağlantı havuzu ayarları - performans için optimize edildi
+    hikari:
+      maximum-pool-size: 20        # Maksimum bağlantı sayısı
+      minimum-idle: 5              # Minimum bekleyen bağlantı sayısı
+      connection-timeout: 30000    # Bağlantı zaman aşımı (ms)
+      idle-timeout: 600000         # Boşta bağlantı zaman aşımı (ms)
+
+  # JPA/Hibernate ORM Konfigürasyonu
+  jpa:
+    hibernate:
+      ddl-auto: validate           # Sadece şemayı doğrula, Flyway migration yapacak
+    show-sql: false                # Üretim ortamında SQL logları kapalı
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 50           # Toplu işlemler için batch boyutu
+
+  # Redis Önbellek Konfigürasyonu
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms              # Bağlantı zaman aşımı
+      lettuce:
+        pool:
+          max-active: 10           # Maksimum aktif bağlantı
+          max-idle: 5              # Maksimum boşta bağlantı
+          min-idle: 1              # Minimum boşta bağlantı
+
+  # Apache Kafka Mesajlaşma Konfigürasyonu
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all                    # Tüm replikalar onaylayana kadar bekle
+      retries: 3                   # Hata durumunda tekrar deneme sayısı
+    consumer:
+      group-id: autohub-consumer-group
+      auto-offset-reset: earliest  # Yeni consumer en baştan okusun
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.autohub.*"
+
+  # Elasticsearch Arama Motoru Konfigürasyonu
+  elasticsearch:
+    uris: ${ES_URI:http://localhost:9200}
+    username: ${ES_USERNAME:elastic}
+    password: ${ES_PASSWORD:}
+
+  # ActiveMQ Mesaj Kuyruğu Konfigürasyonu
+  activemq:
+    broker-url: ${AMQ_URL:tcp://localhost:61616}
+    user: ${AMQ_USER:admin}
+    password: ${AMQ_PASSWORD:admin}
+    in-memory: false
+
+  # Spring Cloud Consul Servis Keşfi Konfigürasyonu
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        service-name: ${spring.application.name}
+        health-check-path: /actuator/health
+        health-check-interval: 30s
+
+  # Cache Konfigürasyonu - Redis kullanılacak
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000        # Önbellek yaşam süresi: 10 dakika (ms)
+
+# Sunucu Ayarları
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api            # Tüm API endpoint'leri /api ile başlar
+  compression:
+    enabled: true                 # HTTP yanıt sıkıştırma aktif
+
+# JWT Token Konfigürasyonu
+jwt:
+  secret: ${JWT_SECRET:autohub-super-secret-key-minimum-256-bit-length-for-security}
+  expiration: ${JWT_EXPIRATION:86400000}       # Access token süresi: 24 saat (ms)
+  refresh-expiration: ${JWT_REFRESH_EXP:604800000}  # Refresh token süresi: 7 gün (ms)
+
+# Spring Actuator - Uygulama izleme endpoint'leri
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans
+  endpoint:
+    health:
+      show-details: always        # Detaylı sağlık bilgisi göster
+  metrics:
+    export:
+      prometheus:
+        enabled: true             # Prometheus metrik ihracatı aktif
+  tracing:
+    sampling:
+      probability: 1.0            # Tüm istekleri izle (geliştirme için)
+
+# Zipkin Dağıtık İzleme Konfigürasyonu
+zipkin:
+  base-url: ${ZIPKIN_URL:http://localhost:9411}
+  enabled: true
+
+# Resilience4J Devre Kesici Konfigürasyonu
+resilience4j:
+  circuitbreaker:
+    instances:
+      vehicleService:
+        # Devre kesici eşik değerleri
+        failure-rate-threshold: 50           # %50 hata oranında devreyi kes
+        wait-duration-in-open-state: 60s     # Açık durumda 60 saniye bekle
+        permitted-number-of-calls-in-half-open-state: 5
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+      paymentService:
+        failure-rate-threshold: 30           # Ödeme servisi için daha düşük eşik
+        wait-duration-in-open-state: 120s
+        sliding-window-size: 20
+  retry:
+    instances:
+      vehicleService:
+        max-attempts: 3                      # Maksimum 3 deneme
+        wait-duration: 1s                    # Denemeler arası 1 saniye bekle
+  ratelimiter:
+    instances:
+      vehicleApi:
+        limit-for-period: 100               # Saniyede maksimum 100 istek
+        limit-refresh-period: 1s
+        timeout-duration: 0
+
+# Loglama Konfigürasyonu
+logging:
+  level:
+    com.autohub: DEBUG                       # Uygulama logları debug seviyesi
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
+    org.springframework.kafka: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/autohub.log
+
+# CORS Konfigürasyonu - Angular frontend'den gelen isteklere izin ver
+cors:
+  allowed-origins: ${CORS_ORIGINS:http://localhost:4200}
+  allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true

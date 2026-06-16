@@ -1,0 +1,369 @@
+# ==============================================================================
+# Docker Compose - Temel Yapılandırma (Base)
+# ==============================================================================
+#
+# Bu dosya tüm ortamlar için ortak ayarları içerir.
+# Ortama özgü override dosyaları ile birlikte kullanılır:
+#
+#   Geliştirme:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   Üretim:      docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+#
+# Tek başına da çalışır:
+#   docker compose up --build
+# ==============================================================================
+
+# ── SERVİSLER ────────────────────────────────────────────────────────────────
+services:
+
+  # ── 1. SPRING BOOT UYGULAMA INSTANCE 1 ─────────────────────────────────────
+  app1:
+    # Yerel Dockerfile'dan imaj oluştur
+    build:
+      # Dockerfile'ın bulunduğu dizin (build context)
+      context: ./app
+      # Kullanılacak Dockerfile
+      dockerfile: Dockerfile
+      # BUILD zamanı argümanları (ARG direktifleri için)
+      args:
+        # Maven build profili
+        BUILD_PROFILE: default
+    # Konteyner adı (sabit isim - docker ps'de görünür)
+    container_name: docker-demo-app1
+    # Dışarıya port açma: HOST_PORT:CONTAINER_PORT
+    # app1 direkt erişim için 8081 portu (Nginx bypass - debug için)
+    ports:
+      - "8081:8080"
+    # Ortam değişkenleri - .env dosyasından okunur veya varsayılan kullanılır
+    environment:
+      # Bu instance'ın adı - load balancing demosunda görünür
+      - INSTANCE_NAME=app1
+      # PostgreSQL bağlantı bilgileri
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-dockerdb}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres123}
+      # Redis bağlantısı
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      # Spring profili (dev/prod override edilecek)
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      # Uygulama sürümü
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+    # Bu servisler hazır olmadan app1 başlamasın
+    depends_on:
+      db:
+        # PostgreSQL'in health check'i geçmesini bekle
+        condition: service_healthy
+      redis:
+        # Redis'in health check'i geçmesini bekle
+        condition: service_healthy
+    # Yeniden başlatma politikası
+    # unless-stopped: Manuel durdurulana kadar veya crash'te yeniden başlat
+    # always: Her koşulda yeniden başlat
+    # on-failure: Sadece hata durumunda yeniden başlat
+    # no: Asla yeniden başlatma
+    restart: unless-stopped
+    # Bağlı olduğu ağlar
+    networks:
+      # Uygulama ağı - tüm servisler bu ağda
+      - app-network
+    # Kaynak limitleri - container sistem kaynaklarını tüketmesin
+    deploy:
+      resources:
+        limits:
+          # Maksimum CPU kullanımı (0.5 = yarım çekirdek)
+          cpus: '0.5'
+          # Maksimum RAM kullanımı
+          memory: 512M
+        reservations:
+          # Garantili minimum CPU
+          cpus: '0.25'
+          # Garantili minimum RAM
+          memory: 256M
+    # Sağlık kontrolü
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    # Logları sınırla (disk dolmasın)
+    logging:
+      driver: "json-file"
+      options:
+        # Maksimum log dosya boyutu
+        max-size: "10m"
+        # Maksimum log dosya sayısı (eski dosyalar silinir)
+        max-file: "3"
+
+  # ── 2. SPRING BOOT UYGULAMA INSTANCE 2 ─────────────────────────────────────
+  # Aynı imajdan ikinci instance - Nginx load balancing için
+  app2:
+    # app1 ile aynı Dockerfile kullan
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        BUILD_PROFILE: default
+    # İkinci instance konteyner adı
+    container_name: docker-demo-app2
+    # Farklı host portu (8082)
+    ports:
+      - "8082:8080"
+    environment:
+      # Bu instance'ın adı - app1'den farklı!
+      - INSTANCE_NAME=app2
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-dockerdb}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres123}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── 3. NGINX - REVERSE PROXY VE LOAD BALANCER ───────────────────────────────
+  nginx:
+    # Nginx özel Dockerfile'ından imaj oluştur
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    # Konteyner adı
+    container_name: docker-demo-nginx
+    # HTTP ve HTTPS portları
+    ports:
+      # HTTP - dışarıya açık ana giriş noktası
+      - "${NGINX_HTTP_PORT:-80}:80"
+      # HTTPS - SSL sertifikası hazır olduğunda kullanılır
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    # Nginx, app1 ve app2 hazır olana kadar başlamasın
+    depends_on:
+      app1:
+        condition: service_healthy
+      app2:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          # Nginx çok az CPU kullanır
+          cpus: '0.25'
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/nginx-status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # ── 4. POSTGRESQL VERİTABANI ─────────────────────────────────────────────────
+  db:
+    # Resmi PostgreSQL 16 Alpine imajı
+    image: postgres:16-alpine
+    # Konteyner adı
+    container_name: docker-demo-postgres
+    # PostgreSQL portu
+    ports:
+      - "${DB_EXTERNAL_PORT:-5432}:5432"
+    # Veritabanı ortam değişkenleri
+    environment:
+      - POSTGRES_DB=${DB_NAME:-dockerdb}
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres123}
+      # PostgreSQL performans parametreleri
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    # Named volume - container silinse bile veri kalır
+    volumes:
+      # pgdata: named volume (docker volume create ile yönetilir)
+      - pgdata:/var/lib/postgresql/data
+      # Başlangıç SQL betiği (ilk çalıştırmada otomatik çalışır)
+      # - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    # PostgreSQL sağlık kontrolü
+    healthcheck:
+      # pg_isready: PostgreSQL'in bağlantı kabul etmeye hazır olduğunu kontrol eder
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-dockerdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── 5. REDIS ──────────────────────────────────────────────────────────────────
+  redis:
+    # Resmi Redis 7 Alpine imajı
+    image: redis:7-alpine
+    # Konteyner adı
+    container_name: docker-demo-redis
+    # Redis portu
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+    # Redis başlatma komutu
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --loglevel notice
+      --save 900 1
+      --save 300 10
+    # Redis veri kalıcılığı için named volume
+    volumes:
+      - redis-data:/data
+    # Redis sağlık kontrolü - PING → PONG
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ── 6. REDIS COMMANDER (REDIS UI) ────────────────────────────────────────────
+  redis-commander:
+    # Redis Commander web arayüzü
+    image: rediscommander/redis-commander:latest
+    container_name: docker-demo-redis-commander
+    # Web arayüzü portu
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8083}:8081"
+    environment:
+      # Redis bağlantısı
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    profiles:
+      # Sadece "tools" profili aktif olduğunda çalışır
+      # docker compose --profile tools up
+      - tools
+
+  # ── 7. PGADMIN (POSTGRESQL UI) ────────────────────────────────────────────────
+  pgadmin:
+    # pgAdmin 4 - PostgreSQL web yönetim arayüzü
+    image: dpage/pgadmin4:latest
+    container_name: docker-demo-pgadmin
+    # pgAdmin web portu
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@admin.com}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin123}
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    volumes:
+      # pgAdmin yapılandırma ve oturum verisi
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    profiles:
+      # Sadece "tools" profili aktif olduğunda çalışır
+      - tools
+
+# ── VOLUME'LER ─────────────────────────────────────────────────────────────────
+# Named Volumes: Docker tarafından yönetilen kalıcı depolama
+# Container silinse bile veri korunur
+# Konumu: /var/lib/docker/volumes/ (Linux)
+volumes:
+  # PostgreSQL veri dizini
+  pgdata:
+    # local: yerel disk sürücüsü kullan
+    driver: local
+    # Volume adı (docker volume ls ile görünür)
+    name: docker-advanced-pgdata
+
+  # Redis AOF ve RDB veri dizini
+  redis-data:
+    driver: local
+    name: docker-advanced-redis-data
+
+  # pgAdmin yapılandırma dizini
+  pgadmin-data:
+    driver: local
+    name: docker-advanced-pgadmin-data
+
+# ── AĞLAR ──────────────────────────────────────────────────────────────────────
+networks:
+  # Tüm servisler bu bridge ağında iletişim kurar
+  app-network:
+    # bridge: Standart Docker ağ sürücüsü
+    # İzole sanal ağ oluşturur - container'lar isimle birbirini bulur
+    # container adı = hostname (örn: db → 172.20.0.3)
+    driver: bridge
+    # Ağ adı (docker network ls ile görünür)
+    name: docker-advanced-net
+    # IPAM: IP Adres Yönetimi
+    ipam:
+      driver: default
+      config:
+        # Özel subnet tanımla (isteğe bağlı, çakışma önlemek için)
+        - subnet: "172.20.0.0/16"
+          # Ağ geçidi
+          gateway: "172.20.0.1"

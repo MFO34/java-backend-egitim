@@ -1,0 +1,140 @@
+# =============================================================
+# DOCKER COMPOSE — Auth Service Tam Stack
+# =============================================================
+# Servisler: app · db (PostgreSQL) · redis · pgadmin · redis-commander
+# Başlatmak için: cp .env.example .env && docker-compose up --build
+# =============================================================
+
+services:
+
+  # ==================== VERİTABANI ====================
+  db:
+    image: postgres:16-alpine
+    container_name: auth_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-auth_db}
+      POSTGRES_USER: ${DB_USER:-auth_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-auth_pass}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-auth_user} -d ${DB_NAME:-auth_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - auth_network
+
+  # ==================== REDIS ====================
+  redis:
+    image: redis:7-alpine
+    container_name: auth_redis
+    # Redis şifresi .env'den — boşsa şifresiz çalışır
+    command: >
+      sh -c "if [ -n '${REDIS_PASSWORD}' ]; then
+               redis-server --requirepass ${REDIS_PASSWORD};
+             else
+               redis-server;
+             fi"
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - auth_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - auth_network
+
+  # ==================== UYGULAMA ====================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_app
+    environment:
+      # Veritabanı — "db" servis adı hostname olarak çalışır
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-auth_db}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-auth_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-auth_pass}
+      # Redis — "redis" servis adı hostname olarak çalışır
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # Profil ve JWT
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      JWT_SECRET: ${JWT_SECRET:-bXlTdXBlclNlY3JldEtleUZvckpXVEF1dGhlbnRpY2F0aW9uMjAyNQ==}
+      JWT_ACCESS_EXPIRATION_MS: ${JWT_ACCESS_EXPIRATION_MS:-900000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      # OAuth2
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      # Email
+      SPRING_MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      # OAuth2 redirect URI
+      OAUTH2_REDIRECT_SUCCESS_URI: ${OAUTH2_REDIRECT_SUCCESS_URI:-http://localhost:3000/oauth2/callback}
+      OAUTH2_REDIRECT_FAILURE_URI: ${OAUTH2_REDIRECT_FAILURE_URI:-http://localhost:3000/oauth2/error}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - auth_network
+    restart: on-failure
+
+  # ==================== PGADMIN ====================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: auth_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@auth.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - auth_pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - auth_network
+
+  # ==================== REDIS COMMANDER ====================
+  # Redis içeriğini tarayıcıdan görsel olarak izlemek için
+  # Token blacklist ve refresh token'ları burada görebilirsin
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: auth_redis_commander
+    environment:
+      REDIS_HOSTS: local:redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8081}:8081"
+    depends_on:
+      - redis
+    networks:
+      - auth_network
+
+# ==================== KALICI DEPOLAMA ====================
+volumes:
+  auth_postgres_data:
+  auth_redis_data:
+  auth_pgadmin_data:
+
+# ==================== AĞ ====================
+networks:
+  auth_network:
+    driver: bridge

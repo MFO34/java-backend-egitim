@@ -1,0 +1,121 @@
+# =============================================================
+# DOCKER COMPOSE — E-Ticaret API Tam Stack
+# =============================================================
+# Çalıştırmak için:
+#   cp .env.example .env     (ilk kez)
+#   docker-compose up --build
+#
+# Servisler:
+#   db      → PostgreSQL 16 veritabanı
+#   app     → Spring Boot REST API
+#   pgadmin → PostgreSQL web yönetim arayüzü
+# =============================================================
+
+services:
+
+  # ==================== VERİTABANI ====================
+  db:
+    image: postgres:16-alpine    # Alpine: minimal boyut (~80MB)
+    container_name: eticaret_db
+
+    environment:
+      # .env dosyasından değerleri al
+      POSTGRES_DB: ${DB_NAME:-eticaret_db}
+      POSTGRES_USER: ${DB_USER:-eticaret_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-eticaret_pass}
+      # Türkçe karakter desteği için locale
+      POSTGRES_INITDB_ARGS: "--locale=tr_TR.UTF-8 --encoding=UTF8"
+
+    ports:
+      # host:container — dışarıdan da bağlanabilmek için
+      - "${DB_PORT:-5432}:5432"
+
+    volumes:
+      # Named volume: container silinse bile veri kalır
+      - postgres_data:/var/lib/postgresql/data
+
+    # Sağlık kontrolü — app, db hazır olmadan başlamamalı
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-eticaret_user} -d ${DB_NAME:-eticaret_db}"]
+      interval: 10s      # Her 10 saniyede kontrol et
+      timeout: 5s        # 5 saniye içinde yanıt vermeli
+      retries: 5         # 5 başarısızlıktan sonra "unhealthy"
+      start_period: 30s  # İlk 30 saniye kontrol etme (başlıyor)
+
+    networks:
+      - eticaret_network
+
+  # ==================== UYGULAMA ====================
+  app:
+    build:
+      context: .           # Dockerfile bu dizinde ara
+      dockerfile: Dockerfile
+    container_name: eticaret_app
+
+    environment:
+      # Spring Boot veritabanı bağlantısı
+      # "db" → docker-compose içindeki servis adı (hostname olarak çalışır)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-eticaret_db}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-eticaret_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-eticaret_pass}
+      # Aktif Spring profili
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+    depends_on:
+      # db "healthy" olmadan app başlama
+      db:
+        condition: service_healthy
+
+    networks:
+      - eticaret_network
+
+    # Uygulama sağlık kontrolü
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s  # JAR başlaması zaman alır
+
+    # Hata olursa yeniden başlat (db henüz hazır değilse)
+    restart: on-failure
+
+  # ==================== PGADMIN ====================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: eticaret_pgadmin
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@eticaret.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      # Otomatik sunucu kaydı (giriş sonrası el ile eklemeye gerek yok)
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+
+    volumes:
+      # pgAdmin ayarlarını kalıcı sakla
+      - pgadmin_data:/var/lib/pgadmin
+
+    depends_on:
+      - db
+
+    networks:
+      - eticaret_network
+
+# ==================== KALICI DEPOLAMA ====================
+volumes:
+  postgres_data:
+    driver: local    # Yerel disk
+  pgadmin_data:
+    driver: local
+
+# ==================== AĞ ====================
+networks:
+  eticaret_network:
+    driver: bridge   # Varsayılan Docker ağ sürücüsü
+    # Tüm servisler bu ağda → birbirini isimle bulabilir (db, app, pgadmin)

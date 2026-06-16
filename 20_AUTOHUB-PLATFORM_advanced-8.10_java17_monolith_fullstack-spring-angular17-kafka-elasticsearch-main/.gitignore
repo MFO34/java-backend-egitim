@@ -1,0 +1,71 @@
+# AutoHub .gitignore
+
+# ==============================
+# Java / Maven
+# ==============================
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot
+*.log
+logs/
+heap.hprof
+
+# ==============================
+# Node.js / Angular
+# ==============================
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-error.log
+.npm
+
+# ==============================
+# IDE
+# ==============================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# ==============================
+# Environment / Secrets
+# ==============================
+.env
+.env.local
+.env.production
+*.pem
+*.key
+*.crt
+secrets/
+
+# ==============================
+# Docker
+# ==============================
+# Docker volume data (yerel geliştirme)
+postgres_data/
+redis_data/
+
+# ==============================
+# Kubernetes
+# ==============================
+# Secret dosyaları
+k8s/secrets/
+
+# ==============================
+# Test
+# ==============================
+coverage/
+*.lcov

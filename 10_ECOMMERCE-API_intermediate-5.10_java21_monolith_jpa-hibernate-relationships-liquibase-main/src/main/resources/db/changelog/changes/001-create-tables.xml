@@ -1,0 +1,634 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    CHANGESET 001 — TÜM TABLOLARI OLUŞTUR
+    ======================================
+    id: her changeset'in benzersiz kimliği
+    author: değişikliği yapan kişi
+    Bu changeset bir kez çalışır, sonra DATABASECHANGELOG'a kaydedilir.
+
+    ROLLBACK:
+    Her changeset için rollback tanımlanmalı.
+    Hata durumunda: liquibase rollback <tag>
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!--
+        CHANGESET 001-1: TEMEL TABLOLAR
+        BaseEntity alanları: id, created_at, updated_at, created_by
+        Tüm tablolarda bu alanlar tekrar eder (JPA @MappedSuperclass)
+    -->
+    <changeSet id="001-create-users" author="eticaret-dev">
+        <comment>Kullanıcılar tablosu — @OneToOne Address ile ilişkili</comment>
+
+        <createTable tableName="users">
+            <!-- @Id @GeneratedValue → SERIAL / BIGSERIAL otomatik artar -->
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Kullanıcı bilgileri -->
+            <column name="first_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <!-- @Lob → TEXT: uzun parola hash için -->
+            <column name="password" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="VARCHAR(20)"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- @OneToOne FK → addresses tablosuna -->
+            <column name="address_id" type="BIGINT"/>
+
+            <!-- @Version — Optimistic Locking için versiyon sayacı -->
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- BaseEntity — @CreatedDate, @LastModifiedDate, @CreatedBy -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <!-- Rollback: Bu changeset geri alınırsa tabloyu sil -->
+        <rollback>
+            <dropTable tableName="users"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-addresses" author="eticaret-dev">
+        <comment>Adresler tablosu — @OneToOne User ile ilişkili</comment>
+
+        <createTable tableName="addresses">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="street" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="city" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="district" type="VARCHAR(100)"/>
+            <column name="postal_code" type="VARCHAR(20)"/>
+            <column name="country" type="VARCHAR(100)" defaultValue="Türkiye">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="addresses"/>
+        </rollback>
+    </changeSet>
+
+    <!-- users → addresses FK ekleme (her ikisi de hazır olduktan sonra) -->
+    <changeSet id="001-add-user-address-fk" author="eticaret-dev">
+        <addForeignKeyConstraint
+            baseTableName="users"
+            baseColumnNames="address_id"
+            constraintName="fk_users_address"
+            referencedTableName="addresses"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="users"
+                                      constraintName="fk_users_address"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-categories" author="eticaret-dev">
+        <comment>Kategoriler — hiyerarşik yapı (self-join: parent_id)</comment>
+
+        <createTable tableName="categories">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="slug" type="VARCHAR(200)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <!-- Self-referential FK: parent_id → categories(id) -->
+            <!-- Hiyerarşi: Elektronik → Telefon → Akıllı Telefon -->
+            <column name="parent_id" type="BIGINT"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true"/>
+            <column name="display_order" type="INTEGER" defaultValueNumeric="0"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <!-- Self-join FK -->
+        <addForeignKeyConstraint
+            baseTableName="categories"
+            baseColumnNames="parent_id"
+            constraintName="fk_categories_parent"
+            referencedTableName="categories"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+
+        <rollback>
+            <dropTable tableName="categories"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-tags" author="eticaret-dev">
+        <comment>Etiketler — @ManyToMany Product ile</comment>
+
+        <createTable tableName="tags">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="slug" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="tags"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-products" author="eticaret-dev">
+        <comment>Ürünler — ana tablo, tüm JPA özelliklerini içerir</comment>
+
+        <createTable tableName="products">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(300)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="slug" type="VARCHAR(300)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <!-- @Lob anotasyonu → TEXT (uzun açıklama) -->
+            <column name="description" type="TEXT"/>
+            <column name="price" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_price" type="DECIMAL(12,2)"/>
+            <column name="stock_quantity" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <!-- @Enumerated(EnumType.STRING) → metin olarak sakla -->
+            <column name="status" type="VARCHAR(30)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- @ManyToOne FK → categories -->
+            <column name="category_id" type="BIGINT"/>
+
+            <!-- @Version — Optimistic Locking (eş zamanlı stok güncellemeleri için) -->
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <!-- products → categories FK -->
+        <addForeignKeyConstraint
+            baseTableName="products"
+            baseColumnNames="category_id"
+            constraintName="fk_products_category"
+            referencedTableName="categories"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+
+        <!-- Arama performansı için index -->
+        <createIndex tableName="products" indexName="idx_products_name">
+            <column name="name"/>
+        </createIndex>
+        <createIndex tableName="products" indexName="idx_products_category">
+            <column name="category_id"/>
+        </createIndex>
+        <createIndex tableName="products" indexName="idx_products_price">
+            <column name="price"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="products"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-product-images" author="eticaret-dev">
+        <comment>Ürün görselleri — @OneToMany Product ile</comment>
+
+        <createTable tableName="product_images">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="image_url" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_primary" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="display_order" type="INTEGER" defaultValueNumeric="0"/>
+            <column name="alt_text" type="VARCHAR(255)"/>
+            <!-- @ManyToOne FK -->
+            <column name="product_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="product_images"
+            baseColumnNames="product_id"
+            constraintName="fk_product_images_product"
+            referencedTableName="products"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <rollback>
+            <dropTable tableName="product_images"/>
+        </rollback>
+    </changeSet>
+
+    <!--
+        @ManyToMany ara tablo: product_tags
+        @JoinTable(name = "product_tags",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    -->
+    <changeSet id="001-create-product-tags" author="eticaret-dev">
+        <comment>Ürün-Etiket ara tablosu — @ManyToMany ilişkisi</comment>
+
+        <createTable tableName="product_tags">
+            <column name="product_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tag_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Bileşik birincil anahtar -->
+        <addPrimaryKey tableName="product_tags"
+                       columnNames="product_id, tag_id"
+                       constraintName="pk_product_tags"/>
+
+        <addForeignKeyConstraint
+            baseTableName="product_tags"
+            baseColumnNames="product_id"
+            constraintName="fk_product_tags_product"
+            referencedTableName="products"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+            baseTableName="product_tags"
+            baseColumnNames="tag_id"
+            constraintName="fk_product_tags_tag"
+            referencedTableName="tags"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <rollback>
+            <dropTable tableName="product_tags"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-orders" author="eticaret-dev">
+        <comment>Siparişler — OrderStatus ve PaymentStatus sealed interface'ler</comment>
+
+        <createTable tableName="orders">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <!-- UUID benzersiz sipariş numarası -->
+            <column name="order_number" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <!-- @ManyToOne FK → users -->
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <!-- OrderStatus sealed interface → String olarak saklanır -->
+            <column name="status" type="VARCHAR(30)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <!-- PaymentStatus sealed interface → String olarak saklanır -->
+            <column name="payment_status" type="VARCHAR(30)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_amount" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="shipping_address" type="TEXT"/>
+            <column name="notes" type="TEXT"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="orders"
+            baseColumnNames="user_id"
+            constraintName="fk_orders_user"
+            referencedTableName="users"
+            referencedColumnNames="id"/>
+
+        <createIndex tableName="orders" indexName="idx_orders_user">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="orders" indexName="idx_orders_status">
+            <column name="status"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="orders"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-order-items" author="eticaret-dev">
+        <comment>Sipariş kalemleri — @ManyToOne Order ve Product ile</comment>
+
+        <createTable tableName="order_items">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <!-- Sipariş anındaki fiyat saklanır (ürün fiyatı sonra değişebilir) -->
+            <column name="unit_price" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subtotal" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="order_items"
+            baseColumnNames="order_id"
+            constraintName="fk_order_items_order"
+            referencedTableName="orders"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+            baseTableName="order_items"
+            baseColumnNames="product_id"
+            constraintName="fk_order_items_product"
+            referencedTableName="products"
+            referencedColumnNames="id"/>
+
+        <rollback>
+            <dropTable tableName="order_items"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-carts" author="eticaret-dev">
+        <comment>Sepetler — @OneToOne User ile</comment>
+
+        <createTable tableName="carts">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="carts"
+            baseColumnNames="user_id"
+            constraintName="fk_carts_user"
+            referencedTableName="users"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <rollback>
+            <dropTable tableName="carts"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-cart-items" author="eticaret-dev">
+        <comment>Sepet kalemleri — @ManyToOne Cart ve Product ile</comment>
+
+        <createTable tableName="cart_items">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="cart_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="INTEGER" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="cart_items"
+            baseColumnNames="cart_id"
+            constraintName="fk_cart_items_cart"
+            referencedTableName="carts"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+            baseTableName="cart_items"
+            baseColumnNames="product_id"
+            constraintName="fk_cart_items_product"
+            referencedTableName="products"
+            referencedColumnNames="id"/>
+
+        <!-- Aynı üründen bir sepette sadece 1 kayıt olmalı -->
+        <addUniqueConstraint tableName="cart_items"
+                             columnNames="cart_id, product_id"
+                             constraintName="uq_cart_items_cart_product"/>
+
+        <rollback>
+            <dropTable tableName="cart_items"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-reviews" author="eticaret-dev">
+        <comment>Ürün yorumları — @ManyToOne User ve Product ile</comment>
+
+        <createTable tableName="reviews">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <!-- 1-5 arası puan -->
+            <column name="rating" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(200)"/>
+            <!-- @Lob → uzun yorum metni -->
+            <column name="content" type="TEXT"/>
+            <column name="is_approved" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(100)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="reviews"
+            baseColumnNames="user_id"
+            constraintName="fk_reviews_user"
+            referencedTableName="users"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="reviews"
+            baseColumnNames="product_id"
+            constraintName="fk_reviews_product"
+            referencedTableName="products"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <!-- Bir kullanıcı bir ürüne sadece bir yorum yapabilir -->
+        <addUniqueConstraint tableName="reviews"
+                             columnNames="user_id, product_id"
+                             constraintName="uq_reviews_user_product"/>
+
+        <!-- Puan 1-5 arasında olmalı -->
+        <addCheckConstraint tableName="reviews"
+                            constraintName="chk_reviews_rating"
+                            constraintBody="rating BETWEEN 1 AND 5"/>
+
+        <rollback>
+            <dropTable tableName="reviews"/>
+        </rollback>
+    </changeSet>
+
+    <!-- Bu tag ile buraya kadar olan migration'ları etiketleyebiliriz -->
+    <!-- liquibase tag --tag=v1.0 ile kullanılır -->
+    <changeSet id="001-tag-v1" author="eticaret-dev">
+        <tagDatabase tag="v1.0-tables-created"/>
+    </changeSet>
+
+</databaseChangeLog>

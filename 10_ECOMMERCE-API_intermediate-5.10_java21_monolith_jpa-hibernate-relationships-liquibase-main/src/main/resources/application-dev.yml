@@ -1,0 +1,22 @@
+# Geliştirme profili — debug mod, SQL logları, tüm actuator
+spring:
+  jpa:
+    show-sql: true              # Her SQL sorgusunu konsola yaz
+    hibernate:
+      ddl-auto: validate        # Liquibase yönetir, Hibernate doğrular
+
+  liquibase:
+    enabled: true
+
+logging:
+  level:
+    com.eticaret: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE  # SQL parametre değerleri
+    org.springframework.transaction: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"            # Tüm actuator endpoint'leri aç

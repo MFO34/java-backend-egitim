@@ -1,0 +1,44 @@
+/* Müşteri Formu Stilleri */
+
+.form-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+mat-card-header {
+  margin-bottom: 16px;
+  mat-icon { margin-right: 8px; vertical-align: middle; }
+}
+
+/* Bölüm başlıkları */
+.section-title {
+  color: #1976d2;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 24px 0 8px;
+}
+
+/* İki sütunlu form satırı */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+/* Tam genişlik alanlar */
+.full-width {
+  width: 100%;
+  margin: 8px 0;
+}
+
+/* Form aksiyon butonları */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+  button { min-width: 120px; }
+}

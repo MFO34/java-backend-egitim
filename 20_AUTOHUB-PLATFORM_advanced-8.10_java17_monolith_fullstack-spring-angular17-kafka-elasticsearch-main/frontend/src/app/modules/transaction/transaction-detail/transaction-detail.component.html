@@ -1,0 +1,134 @@
+<!-- İşlem Detay Template -->
+<div class="detail-container">
+
+  <!-- Yükleniyor -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+
+  <ng-container *ngIf="transaction && !isLoading">
+
+    <!-- Üst Aksiyon Çubuğu -->
+    <div class="action-bar">
+      <button mat-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon> İşlem Listesi
+      </button>
+      <div class="action-buttons" *ngIf="authService.isEmployee() && canModify">
+        <button mat-stroked-button color="primary"
+                (click)="completeTransaction()"
+                [disabled]="isProcessing">
+          <mat-icon>check_circle</mat-icon> Tamamla
+        </button>
+        <button mat-stroked-button color="warn"
+                (click)="cancelTransaction()"
+                [disabled]="isProcessing">
+          <mat-icon>cancel</mat-icon> İptal Et
+        </button>
+      </div>
+    </div>
+
+    <!-- Başlık Kartı -->
+    <mat-card class="header-card">
+      <mat-card-content>
+        <div class="transaction-header">
+          <div class="transaction-info">
+            <h1>
+              <mat-icon>{{ transaction.transactionType === 'RENTAL' ? 'key' : 'sell' }}</mat-icon>
+              {{ typeLabels[transaction.transactionType] }} #{{ transaction.id }}
+            </h1>
+            <span class="status-badge" [ngClass]="getStatusClass(transaction.status)">
+              {{ statusLabels[transaction.status] }}
+            </span>
+          </div>
+          <div class="transaction-amount">
+            <p class="total-label">Toplam Tutar (KDV Dahil)</p>
+            <p class="total-amount">{{ transaction.totalAmount | currency:'TRY':'symbol':'1.0-0':'tr' }}</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="detail-grid">
+
+      <!-- Araç Bilgileri -->
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title><mat-icon>directions_car</mat-icon> Araç</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Araç</span>
+              <span class="value">{{ transaction.vehicleName }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Plaka</span>
+              <span class="value mono">{{ transaction.vehiclePlate }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Müşteri Bilgileri -->
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title><mat-icon>person</mat-icon> Müşteri</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-item">
+            <span class="label">Ad Soyad</span>
+            <span class="value">{{ transaction.customerName }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+    </div>
+
+    <!-- Tarih ve Tutar Bilgileri -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title><mat-icon>receipt</mat-icon> İşlem Detayı</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-grid four-col">
+          <div class="info-item">
+            <span class="label">Başlangıç Tarihi</span>
+            <span class="value">{{ transaction.startDate | date:'dd.MM.yyyy' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Bitiş Tarihi</span>
+            <span class="value">{{ transaction.endDate ? (transaction.endDate | date:'dd.MM.yyyy') : '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">KDV Hariç</span>
+            <span class="value">{{ transaction.baseAmount | currency:'TRY':'symbol':'1.0-0':'tr' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">KDV (%18)</span>
+            <span class="value">{{ transaction.taxAmount | currency:'TRY':'symbol':'1.0-0':'tr' }}</span>
+          </div>
+        </div>
+
+        <!-- Oluşturma/güncelleme tarihleri -->
+        <mat-divider style="margin: 16px 0;"></mat-divider>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Oluşturma Tarihi</span>
+            <span class="value">{{ transaction.createdAt | date:'dd.MM.yyyy HH:mm' }}</span>
+          </div>
+          <div class="info-item" *ngIf="transaction.updatedAt">
+            <span class="label">Son Güncelleme</span>
+            <span class="value">{{ transaction.updatedAt | date:'dd.MM.yyyy HH:mm' }}</span>
+          </div>
+        </div>
+
+        <!-- Notlar -->
+        <div class="notes-section" *ngIf="transaction.notes">
+          <span class="label">Notlar</span>
+          <p class="notes-text">{{ transaction.notes }}</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </ng-container>
+</div>

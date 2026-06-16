@@ -1,0 +1,119 @@
+# =============================================================
+# ANA UYGULAMA YAPILANDIRMASI — Auth Service
+# =============================================================
+
+spring:
+  application:
+    name: auth-service
+
+  # ===== VERİTABANI =====
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth_db
+    username: auth_user
+    password: auth_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: AuthHikariPool
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+
+  # ===== JPA =====
+  jpa:
+    hibernate:
+      ddl-auto: update    # Dev'de tablo otomatik oluşur
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false   # Anti-pattern — kapalı
+
+  # ===== REDIS =====
+  data:
+    redis:
+      host: localhost      # Docker'da "redis" olarak override edilir
+      port: 6379
+      password:           # Boş → şifresiz
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+
+  # ===== EMAIL =====
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true  # TLS şifrelemesi zorunlu
+            required: true
+
+  # ===== OAUTH2 =====
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:placeholder}
+            client-secret: ${GOOGLE_CLIENT_SECRET:placeholder}
+            # Google'ın sağladığı scope'lar
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          github:
+            client-id: ${GITHUB_CLIENT_ID:placeholder}
+            client-secret: ${GITHUB_CLIENT_SECRET:placeholder}
+            # GitHub public scope'ları
+            scope:
+              - user:email
+              - read:user
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+# ===== JWT YAPILANDIRMASI =====
+jwt:
+  secret: ${JWT_SECRET:bXlTdXBlclNlY3JldEtleUZvckpXVEF1dGhlbnRpY2F0aW9uMjAyNQ==}
+  access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}       # 15 dakika
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 gün
+
+# ===== UYGULAMA ÖZELLEŞTİRMELERİ =====
+app:
+  mail:
+    from: ${MAIL_FROM:noreply@auth-service.com}
+  oauth2:
+    # OAuth2 başarı/hata durumunda frontend'e yönlendirme
+    redirect-success-uri: ${OAUTH2_REDIRECT_SUCCESS_URI:http://localhost:3000/oauth2/callback}
+    redirect-failure-uri: ${OAUTH2_REDIRECT_FAILURE_URI:http://localhost:3000/oauth2/error}
+  # Email doğrulama ve şifre sıfırlama linklerinin base URL'i
+  base-url: http://localhost:8080
+
+# ===== SWAGGER =====
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+# ===== ACTUATOR =====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ===== SUNUCU =====
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always

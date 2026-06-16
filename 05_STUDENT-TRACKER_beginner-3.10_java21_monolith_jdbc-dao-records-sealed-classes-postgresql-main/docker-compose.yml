@@ -1,0 +1,68 @@
+# ============================================================
+# docker-compose.yml — Sadece PostgreSQL veritabanı servisi
+#
+# AMAÇ: Uygulamayı Docker'da çalıştırmıyoruz!
+# Sadece PostgreSQL'i Docker ile ayağa kaldırıyoruz.
+# Uygulama bilgisayarında "java -jar" ile çalışacak.
+# Bu sayede JDBC bağlantısını net anlayabiliyoruz.
+#
+# KULLANIM: docker-compose up -d db
+# ============================================================
+
+# docker-compose dosya formatı versiyonu
+version: '3.8'
+
+# Servisler: her servis bir Docker container'dır
+services:
+
+  # "db" adında tek bir servis tanımlıyoruz — PostgreSQL
+  db:
+    # Kullanılacak Docker imajı: resmi PostgreSQL 16
+    image: postgres:16-alpine   # alpine: hafif Linux tabanlı, boyut küçük
+
+    # Container'ın adı — docker ps komutuyla görürsün
+    container_name: ogrenci_db
+
+    # Otomatik yeniden başlatma: sistem yeniden açılınca container da başlar
+    restart: unless-stopped
+
+    # Ortam değişkenleri — PostgreSQL bu değerlerle başlar
+    environment:
+      # Veritabanı adı: uygulama bu DB'ye bağlanacak
+      POSTGRES_DB: ogrenci_takip
+
+      # Kullanıcı adı: JDBC bağlantısında kullanılacak
+      POSTGRES_USER: ogrenci_user
+
+      # Şifre: hikari.properties dosyasındaki şifreyle eşleşmeli!
+      POSTGRES_PASSWORD: ogrenci_pass
+
+      # Zaman dilimi: Türkiye saati
+      TZ: Europe/Istanbul
+
+    # Port yönlendirme: HOST:CONTAINER
+    # Sol taraf (5432): Mac'in portu — uygulamanın bağlandığı yer
+    # Sağ taraf (5432): Container içindeki PostgreSQL portu
+    ports:
+      - "5432:5432"
+
+    # Volume (Kalıcı depolama): container silinse bile veriler kaybolmaz
+    volumes:
+      # postgres_data: adlı volume → container'ın /var/lib/postgresql/data klasörüne bağlı
+      - postgres_data:/var/lib/postgresql/data
+
+    # Sağlık kontrolü: PostgreSQL gerçekten çalışıyor mu diye kontrol eder
+    healthcheck:
+      # pg_isready: PostgreSQL'in hazır olup olmadığını test eder
+      test: ["CMD-SHELL", "pg_isready -U ogrenci_user -d ogrenci_takip"]
+      interval: 10s    # Her 10 saniyede bir kontrol et
+      timeout: 5s      # 5 saniye içinde cevap gelmezse başarısız say
+      retries: 5       # 5 kez dene, olmadıysa container'ı "unhealthy" işaretle
+
+# Volume tanımları: Docker'ın yönettiği kalıcı depolama alanları
+volumes:
+  # postgres_data: PostgreSQL verilerini kalıcı tutar
+  # "docker-compose down" yapsan bile bu volume silinmez
+  # "docker-compose down -v" yapman gerekir verileri silmek için
+  postgres_data:
+    driver: local   # Yerel disk kullan (varsayılan)

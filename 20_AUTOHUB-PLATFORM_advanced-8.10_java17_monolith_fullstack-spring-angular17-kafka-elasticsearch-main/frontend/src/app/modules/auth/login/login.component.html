@@ -1,0 +1,83 @@
+<!-- Giriş Sayfası Template -->
+<!-- Angular Material bileşenleri ile tasarlanmış giriş formu -->
+
+<div class="login-container">
+  <mat-card class="login-card">
+
+    <!-- Kart Başlığı -->
+    <mat-card-header>
+      <mat-card-title>
+        <div class="login-logo">
+          🚗 AutoHub
+        </div>
+        <div class="login-subtitle">Otomotiv Yönetim Sistemi</div>
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Giriş Formu - [formGroup] ile Reactive Form bağlanır -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+
+        <!-- Kullanıcı Adı Alanı -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Kullanıcı Adı</mat-label>
+          <!-- formControlName: Form grubundaki alan adı -->
+          <input matInput
+                 formControlName="username"
+                 placeholder="Kullanıcı adınızı giriniz"
+                 autocomplete="username">
+          <mat-icon matSuffix>person</mat-icon>
+          <!-- Doğrulama hata mesajları -->
+          <mat-error *ngIf="f['username'].errors?.['required']">
+            Kullanıcı adı zorunludur
+          </mat-error>
+          <mat-error *ngIf="f['username'].errors?.['minlength']">
+            Kullanıcı adı en az 3 karakter olmalıdır
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Şifre Alanı -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Şifre</mat-label>
+          <input matInput
+                 formControlName="password"
+                 [type]="hidePassword ? 'password' : 'text'"
+                 placeholder="Şifrenizi giriniz"
+                 autocomplete="current-password">
+          <!-- Şifre görünürlük toggle butonu -->
+          <button mat-icon-button matSuffix
+                  type="button"
+                  (click)="hidePassword = !hidePassword">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="f['password'].errors?.['required']">
+            Şifre zorunludur
+          </mat-error>
+          <mat-error *ngIf="f['password'].errors?.['minlength']">
+            Şifre en az 6 karakter olmalıdır
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Giriş Butonu -->
+        <button mat-raised-button
+                color="primary"
+                type="submit"
+                class="full-width login-button"
+                [disabled]="isLoading">
+          <!-- Yükleme sırasında spinner göster -->
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <span *ngIf="!isLoading">Giriş Yap</span>
+        </button>
+
+        <!-- Kayıt Ol Linki -->
+        <div class="register-link">
+          <span>Hesabınız yok mu? </span>
+          <a routerLink="/auth/register" mat-button color="primary">
+            Kayıt Ol
+          </a>
+        </div>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,0 +1,82 @@
+<!-- Kayıt Sayfası Template -->
+<div class="register-container">
+  <mat-card class="register-card">
+    <mat-card-header>
+      <mat-card-title>
+        <div class="logo">🚗 AutoHub - Kayıt Ol</div>
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+
+        <!-- Ad ve Soyad satırı -->
+        <div class="name-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Ad</mat-label>
+            <input matInput formControlName="firstName" placeholder="Adınız">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Soyad</mat-label>
+            <input matInput formControlName="lastName" placeholder="Soyadınız">
+          </mat-form-field>
+        </div>
+
+        <!-- Kullanıcı adı -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Kullanıcı Adı</mat-label>
+          <input matInput formControlName="username" placeholder="Kullanıcı adı seçin">
+          <mat-icon matSuffix>person</mat-icon>
+          <mat-error *ngIf="f['username'].errors?.['required']">Kullanıcı adı zorunludur</mat-error>
+          <mat-error *ngIf="f['username'].errors?.['minlength']">En az 3 karakter olmalıdır</mat-error>
+        </mat-form-field>
+
+        <!-- E-posta -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>E-posta</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="ornek@email.com">
+          <mat-icon matSuffix>email</mat-icon>
+          <mat-error *ngIf="f['email'].errors?.['required']">E-posta zorunludur</mat-error>
+          <mat-error *ngIf="f['email'].errors?.['email']">Geçerli bir e-posta giriniz</mat-error>
+        </mat-form-field>
+
+        <!-- Şifre -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Şifre</mat-label>
+          <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'">
+          <button mat-icon-button matSuffix type="button" (click)="hidePassword = !hidePassword">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-hint>En az 8 karakter, büyük/küçük harf, rakam ve özel karakter içermeli</mat-hint>
+          <mat-error *ngIf="f['password'].errors?.['pattern']">
+            Şifre güvenlik gereksinimlerini karşılamıyor
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Şifre tekrar -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Şifre Tekrar</mat-label>
+          <input matInput formControlName="confirmPassword" [type]="hideConfirmPassword ? 'password' : 'text'">
+          <button mat-icon-button matSuffix type="button" (click)="hideConfirmPassword = !hideConfirmPassword">
+            <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="f['confirmPassword'].errors?.['passwordMismatch']">
+            Şifreler eşleşmiyor
+          </mat-error>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit"
+                class="full-width submit-btn" [disabled]="isLoading">
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <span *ngIf="!isLoading">Kayıt Ol</span>
+        </button>
+
+        <div class="login-link">
+          Zaten hesabınız var mı?
+          <a routerLink="/auth/login" mat-button color="primary">Giriş Yap</a>
+        </div>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

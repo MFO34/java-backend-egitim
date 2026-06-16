@@ -1,0 +1,133 @@
+# ==============================================================================
+# Docker Compose - GELİŞTİRME ORTAMI OVERRIDE
+# ==============================================================================
+#
+# Bu dosya temel docker-compose.yml dosyasını geliştirme ortamı için OVERRIDE eder.
+# Temel dosyayla birlikte kullanılır:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   veya Makefile ile:
+#   make dev
+#
+# Geliştirme ortamı özellikleri:
+#   ✓ Kaynak kodu bind mount ile yansıtılır (hot reload)
+#   ✓ Debug port açık (5005)
+#   ✓ SQL sorguları loga yazılır
+#   ✓ Detaylı log seviyesi (DEBUG)
+#   ✓ Redis Commander ve pgAdmin otomatik açık
+#   ✓ Düşük resource limitler (geliştirici bilgisayarı için)
+#   ✗ SSL yok
+#   ✗ Üretim güvenlik kısıtlamaları yok
+# ==============================================================================
+
+services:
+
+  # ── APP1 GELİŞTİRME OVERRIDE ──────────────────────────────────────────────
+  app1:
+    # Geliştirme imajı: JDK 21 tam (dev tools dahil)
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      # Geliştirme build argümanları
+      args:
+        BUILD_PROFILE: dev
+    environment:
+      # Spring geliştirme profili aktif et
+      - SPRING_PROFILES_ACTIVE=dev
+      # Geliştirme ortamı flag
+      - APP_ENV=development
+      # Debug log
+      - LOGGING_LEVEL_COM_DOCKERDEMO=DEBUG
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=DEBUG
+      # JVM remote debug portu (IDE bağlantısı için)
+      # IntelliJ: Run > Edit Configurations > + > Remote JVM Debug > Port 5005
+      - JAVA_OPTS=-Xms128m -Xmx256m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+      # Hot reload için Spring DevTools (varsa)
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+    ports:
+      # Uygulama portu (temel dosyadan devralınır: 8081)
+      - "8081:8080"
+      # JVM Remote Debug portu - IDE debug bağlantısı için
+      - "5005:5005"
+    volumes:
+      # ── BIND MOUNT: HOT RELOAD ─────────────────────────────────────────────
+      # Bind Mount: host dizinini container'a bağla
+      # Kaynak kod değişikliği → container içinde anında yansır
+      # Named Volume'dan farkı: host dosya sistemini direkt kullanır
+      # NOT: Bu sadece JAR rebuild için değil, kaynak kod erişimi içindir
+      # Gerçek hot reload için Spring DevTools gereklidir
+      - ./app/src:/build/src:ro   # Kaynak kodu salt okunur bağla
+    # Geliştirmede daha az kaynak limiti (bilgisayarı yavaşlatmasın)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # ── APP2 GELİŞTİRME OVERRIDE ──────────────────────────────────────────────
+  app2:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        BUILD_PROFILE: dev
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - APP_ENV=development
+      - LOGGING_LEVEL_COM_DOCKERDEMO=DEBUG
+      - JAVA_OPTS=-Xms128m -Xmx256m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006
+    ports:
+      - "8082:8080"
+      # app2 için farklı debug portu
+      - "5006:5006"
+    volumes:
+      - ./app/src:/build/src:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+
+  # ── NGINX GELİŞTİRME OVERRIDE ───────────────────────────────────────────────
+  nginx:
+    environment:
+      # Nginx debug modu (çok ayrıntılı log - üretimde kullanma!)
+      - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx
+    volumes:
+      # Nginx konfigürasyonunu bind mount ile bağla
+      # Değişiklik yapınca container yeniden build etmeden geçerli olsun
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+  # ── VERİTABANI GELİŞTİRME OVERRIDE ─────────────────────────────────────────
+  db:
+    environment:
+      # Geliştirmede ek PostgreSQL parametreleri
+      - POSTGRES_DB=${DB_NAME:-dockerdb}
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres123}
+    # Geliştirmede PostgreSQL portunu dışarıya aç (IDE / DataGrip bağlantısı için)
+    ports:
+      - "5432:5432"
+
+  # ── REDIS GELİŞTİRME OVERRIDE ─────────────────────────────────────────────
+  redis:
+    # Geliştirmede Redis portunu dışarıya aç (redis-cli / RedisInsight için)
+    ports:
+      - "6379:6379"
+
+  # ── REDIS COMMANDER GELİŞTİRME: PROFİL OLMADAN AKTİF ─────────────────────
+  # Geliştirmede Redis Commander ve pgAdmin her zaman açık olsun
+  redis-commander:
+    # profiles listesini boşalt → her zaman çalışsın
+    profiles: []
+    ports:
+      - "8083:8081"
+
+  # ── PGADMIN GELİŞTİRME: PROFİL OLMADAN AKTİF ─────────────────────────────
+  pgadmin:
+    profiles: []
+    ports:
+      - "5050:80"

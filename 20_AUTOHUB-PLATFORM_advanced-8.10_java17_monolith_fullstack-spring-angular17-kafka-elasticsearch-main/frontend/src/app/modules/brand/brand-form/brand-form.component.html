@@ -1,0 +1,72 @@
+<!-- Marka Formu Template -->
+<div class="form-container">
+  <mat-card>
+
+    <!-- Kart Başlığı -->
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>{{ isEditMode ? 'edit' : 'add_circle' }}</mat-icon>
+        {{ pageTitle }}
+      </mat-card-title>
+      <mat-card-subtitle>
+        {{ isEditMode ? 'Marka bilgilerini güncelleyin' : 'Sisteme yeni marka ekleyin' }}
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+
+      <!-- Yükleniyorsa spinner göster -->
+      <div class="loading-overlay" *ngIf="isLoading && isEditMode">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <form [formGroup]="brandForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading || !isEditMode">
+
+        <!-- Marka Adı -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Marka Adı *</mat-label>
+          <input matInput formControlName="name" placeholder="Toyota">
+          <mat-icon matSuffix>branding_watermark</mat-icon>
+          <mat-error *ngIf="f['name'].errors?.['required']">Marka adı zorunludur</mat-error>
+          <mat-error *ngIf="f['name'].errors?.['minlength']">En az 2 karakter giriniz</mat-error>
+          <mat-error *ngIf="f['name'].errors?.['maxlength']">En fazla 50 karakter girebilirsiniz</mat-error>
+        </mat-form-field>
+
+        <!-- Menşei Ülke -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Menşei Ülke *</mat-label>
+          <mat-select formControlName="country">
+            <mat-option *ngFor="let country of countries" [value]="country">
+              {{ country }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>public</mat-icon>
+          <mat-error *ngIf="f['country'].errors?.['required']">Ülke seçimi zorunludur</mat-error>
+        </mat-form-field>
+
+        <!-- Logo URL -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Logo URL (Opsiyonel)</mat-label>
+          <input matInput formControlName="logoUrl" placeholder="https://example.com/logo.png">
+          <mat-icon matSuffix>image</mat-icon>
+          <mat-hint>Geçerli bir HTTP/HTTPS URL'i giriniz</mat-hint>
+          <mat-error *ngIf="f['logoUrl'].errors?.['pattern']">Geçerli bir URL giriniz (http:// veya https://)</mat-error>
+        </mat-form-field>
+
+        <!-- Form Butonları -->
+        <mat-divider style="margin: 16px 0;"></mat-divider>
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()" [disabled]="isLoading">
+            <mat-icon>close</mat-icon> İptal
+          </button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+            <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+            <mat-icon *ngIf="!isLoading">{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+            <span *ngIf="!isLoading">{{ isEditMode ? 'Güncelle' : 'Kaydet' }}</span>
+          </button>
+        </div>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

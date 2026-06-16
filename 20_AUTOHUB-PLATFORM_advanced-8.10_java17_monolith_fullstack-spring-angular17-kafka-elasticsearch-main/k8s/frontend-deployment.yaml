@@ -1,0 +1,110 @@
+# AutoHub Frontend Kubernetes Deployment
+# Angular uygulamasını Nginx ile Kubernetes'te sunar
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autohub-frontend
+  namespace: autohub
+  labels:
+    app: autohub-frontend
+    component: web
+spec:
+  replicas: 2                          # 2 replica - yüksek erişilebilirlik
+  selector:
+    matchLabels:
+      app: autohub-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: autohub-frontend
+    spec:
+      containers:
+        - name: autohub-frontend
+          image: autohub/frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: autohub-frontend-service
+  namespace: autohub
+spec:
+  selector:
+    app: autohub-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+# Ingress - Dış dünyadan erişim için
+# NGINX Ingress Controller gerektirir
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: autohub-ingress
+  namespace: autohub
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Rate limiting - DDoS koruması
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - autohub.com
+        - api.autohub.com
+      secretName: autohub-tls           # TLS sertifikası
+  rules:
+    # API isteklerini backend'e yönlendir
+    - host: api.autohub.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: autohub-backend-service
+                port:
+                  number: 8080
+    # Frontend isteklerini Angular uygulamasına yönlendir
+    - host: autohub.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: autohub-frontend-service
+                port:
+                  number: 80

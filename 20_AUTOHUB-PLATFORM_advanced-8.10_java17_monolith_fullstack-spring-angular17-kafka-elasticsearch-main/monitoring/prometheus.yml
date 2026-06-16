@@ -1,0 +1,38 @@
+# Prometheus Konfigürasyonu
+# AutoHub uygulamasından metrik toplama ayarları
+
+global:
+  # Varsayılan metrik toplama aralığı: 15 saniye
+  scrape_interval: 15s
+  # Varsayılan değerlendirme aralığı
+  evaluation_interval: 15s
+  # Dış sistemlerde etiketler
+  external_labels:
+    monitor: 'autohub-monitor'
+
+# Metrik kaynaklarını tanımla
+scrape_configs:
+  # AutoHub Backend - Spring Actuator Prometheus endpoint'i
+  - job_name: 'autohub-backend'
+    metrics_path: '/api/actuator/prometheus'  # Spring Actuator Prometheus endpoint
+    scrape_interval: 10s                       # Daha sık toplama
+    static_configs:
+      - targets: ['backend:8080']              # Backend servisi
+        labels:
+          application: 'autohub-backend'
+          environment: 'development'
+
+  # Prometheus kendisi
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # PostgreSQL Exporter (opsiyonel - eklenebilir)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # Redis Exporter (opsiyonel)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']

@@ -1,0 +1,79 @@
+# ==============================================================================
+# .dockerignore - Docker Build Context Dışlama
+# ==============================================================================
+# Bu dosya "docker build" sırasında Docker daemon'a gönderilmeyecek
+# dosya ve dizinleri belirtir.
+#
+# Neden Önemli?
+#   - Build context küçülür → daha hızlı build
+#   - Hassas dosyalar imaja girmez (güvenlik)
+#   - Gereksiz layer değişikliği önlenir (cache optimizasyonu)
+# ==============================================================================
+
+# ── MAVEN DERLEME ÇIKTILARI ──────────────────────────────────────────────────
+# Derleme çıktı dizini - Docker içinde yeniden derleneceği için gereksiz
+target/
+# Maven wrapper cache
+.mvn/
+
+# ── IDE DOSYALARI ────────────────────────────────────────────────────────────
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+# Eclipse
+.classpath
+.project
+.settings/
+# VS Code
+.vscode/
+
+# ── GIT DOSYALARI ────────────────────────────────────────────────────────────
+# Git deposu - imaja dahil etme
+.git/
+.gitignore
+.gitattributes
+
+# ── ORTAM DEĞİŞKENLERİ ───────────────────────────────────────────────────────
+# Gerçek .env dosyası imaja girmemeli! (şifreler, API anahtarları)
+.env
+# Tüm .env varyantları
+.env.*
+# Örnek dosya dahil edilebilir (şifre içermez)
+!.env.example
+
+# ── DOCKER DOSYALARI ─────────────────────────────────────────────────────────
+# Docker Compose dosyaları - uygulama imajına girmez
+docker-compose*.yml
+# Dockerfile build context'te gerekli ama diğer container'lara dahil etme
+# Dockerfile  ← Bunu dahil et (build için gerekli)
+
+# ── DOKÜMANTASYON ────────────────────────────────────────────────────────────
+# README ve docs - imaj boyutunu artırır
+README.md
+docs/
+*.md
+
+# ── LOG DOSYALARI ────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── TEST DOSYALARI ───────────────────────────────────────────────────────────
+# Test kaynak kodu üretim imajına girmez
+src/test/
+
+# ── İŞLETİM SİSTEMİ DOSYALARI ───────────────────────────────────────────────
+# macOS sistem dosyası
+.DS_Store
+# Windows küçük resim dosyası
+Thumbs.db
+
+# ── GEÇİCİ DOSYALAR ─────────────────────────────────────────────────────────
+*.tmp
+*.temp
+*.swp
+
+# ── NODE.JS (varsa frontend) ─────────────────────────────────────────────────
+node_modules/
+npm-debug.log
+yarn-error.log

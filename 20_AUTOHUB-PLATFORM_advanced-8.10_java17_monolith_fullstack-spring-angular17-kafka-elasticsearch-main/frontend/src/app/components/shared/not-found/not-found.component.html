@@ -1,0 +1,24 @@
+<!-- 404 Sayfa Bulunamadı Template -->
+<div class="error-container">
+  <mat-card class="error-card">
+    <mat-card-content>
+      <div class="error-content">
+        <mat-icon class="error-icon">search_off</mat-icon>
+        <h1 class="error-code">404</h1>
+        <h2>Sayfa Bulunamadı</h2>
+        <p class="error-message">
+          Aradığınız sayfa mevcut değil veya taşınmış olabilir.
+          URL'yi kontrol edip tekrar deneyin.
+        </p>
+        <div class="error-actions">
+          <button mat-stroked-button (click)="goBack()">
+            <mat-icon>arrow_back</mat-icon> Geri Dön
+          </button>
+          <button mat-raised-button color="primary" (click)="goHome()">
+            <mat-icon>home</mat-icon> Ana Sayfa
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
