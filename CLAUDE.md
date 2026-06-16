@@ -1,4 +1,4 @@
-# Mami Eğitim — Claude Code Bağlam Dosyası
+# Java Eğitim — Claude Code Bağlam Dosyası
 
 Bu dosya, herhangi bir Claude Code instance'ının bu projeye bağlandığında
 Fatih'i ve öğrenme yolculuğunu anında anlayabilmesi için yazılmıştır.
