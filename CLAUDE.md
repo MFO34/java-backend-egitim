@@ -70,12 +70,35 @@ Neden 02 önce: Core Java OOP'u gerçek senaryo üzerinde pekiştirmek için.
 
 ---
 
+## Öğrenme Yöntemi
+
+Tüm repolar baştan yazılmış durumda. Yaklaşım şu:
+
+1. **Önce okuyarak anla** — Claude kavramı açıklar, mevcut kod üzerinden gösterir.
+2. **Sonra kendin yaz** — Aynı kodu kapatıp sıfırdan yazmayı denersin.
+3. **Pratik** — Her kavram için küçük egzersizler yapılır.
+
+---
+
 ## Şu Anki Durum
 
 **Aktif repo: 02 — BANK-ACCOUNT-MANAGER**
 
-Tamamlanan katman: Model (Account, SavingsAccount, TransactionRecord, AccountType, TransactionType)
-Sıradaki: `AccountService.java` — Stream API, Lambda, Collections
+Tüm kod yazılmış. Kavramsal okuma aşamasındayız.
+
+Tamamlanan kavramlar: Abstract Class, Interface vs Abstract Class, final field, static, Defensive Copy, protected, private static final, Runtime Polymorphism, Single Responsibility, Enum, Stream API, Lambda, HashMap/LinkedList/HashSet, Exception Handling, Optional, Composition, Generics, Wrapper/Autoboxing, Iterator, File I/O
+
+Durum: **Kavramsal okuma tamamlandı.** Yazma pratiği sonraya bırakıldı.
+
+---
+
+## Şu Anki Durum
+
+**Aktif repo: 01 — DSA-FUNDAMENTALS**
+
+Tamamlanan konular: Big O, Arrays (Two Sum, Sliding Window, Two Pointer, Kadane, Prefix Sum)
+
+Sıradaki: Hashing (Group Anagrams, LRU Cache)
 
 ---
 
@@ -362,3 +385,105 @@ Bu sayede hesap türünü soran kişi hem adını hem faiz oranını aynı nesne
 | Open/Closed Prensibi | Mevcut kodu değiştirme, yeni sınıf ekle |
 | Enum | Sabit değer kümesi, aslında class, field ve metod taşıyabilir |
 | Least Privilege | Erişimi her zaman ihtiyaç kadar aç, fazlasını değil |
+| Stream API | Koleksiyon üzerinde filter/map/collect zinciri — kaynak → ara op → terminal |
+| Lambda | `param -> ifade` — anonim fonksiyon, tek satır |
+| Method Reference | `Sınıf::metod` — `x -> x.metod()` ile aynı, daha kısa |
+| Optional<T> | Değer olabilir de olmayabilir de — null yerine tip güvenli sarmalayıcı |
+| HashMap | Anahtar-değer, O(1) arama — "numarayla anında bul" |
+| LinkedList | Bağlı düğümler, O(1) ekleme/silme, ortadan silme hızlı |
+| HashSet | Tekrarsız küme, O(1) "var mı?" kontrolü |
+| Checked / Unchecked Exception | Checked zorunlu handle; RuntimeException isteğe bağlı |
+| Custom Exception | `extends RuntimeException`, `super(mesaj)`, yapısal veri taşıyabilir |
+| try-with-resources | Blok bitince `close()` garantili — kaynak sızıntısı yok |
+| Composition (HAS-A) | Sınıf başka sınıfı field olarak tutar, kalıtım yerine tercih edilir |
+| Generics `<T>` | Tip parametresi — yanlış tip derleme zamanında yakalanır, cast gerekmez |
+| Autoboxing / Unboxing | primitive ↔ wrapper otomatik dönüşüm; karşılaştırmada `.equals()` kullan |
+| Iterator | `hasNext()` + `next()` — gezarken güvenli silme için `iterator.remove()` |
+| BufferedWriter | Tampona yaz, toplu diske gönder — `FileWriter`'dan performanslı |
+
+---
+
+## 01 — DSA-FUNDAMENTALS Kavramları
+
+### Big O Notasyonu
+
+Girdi büyüdükçe işlem sayısının nasıl büyüdüğünü ölçer — makine bağımsız.
+
+```
+O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ)
+```
+
+Kurallar:
+- Sabitleri at: O(3n) → O(n)
+- Baskın terimi al: O(n² + n) → O(n²)
+- Space complexity: hafıza kullanımı için aynı notasyon
+
+Array Big O: Erişim O(1) | Arama O(n) | Ekleme/Silme O(n) — shift gerekir
+
+---
+
+### Array Teknikleri
+
+**Two Sum — HashMap ile O(n²) → O(n)**
+
+"Tamamlayan sayıyı daha önce gördüm mü?" sorusunu HashMap'e sor.
+
+```java
+int complement = target - nums[i];
+if (map.containsKey(complement)) return cevap;
+map.put(nums[i], i);
+```
+
+Kalıp: "İki eleman arasında ilişki ara" → complement = target - nums[i] → HashMap
+
+---
+
+**Sliding Window — Pencereyi kaydır**
+
+Sabit k boyutunda alt dizi: Her adımda giren ekle, çıkan çıkar. O(n).
+
+```java
+windowSum += nums[i] - nums[i - k]; // giren - çıkan
+```
+
+Kalıp: "Belirli uzunlukta alt dizi toplamı/maksimumu" → Sliding Window
+
+---
+
+**Two Pointer — İki uçtan sıkıştır**
+
+Sıralı dizide iki eleman arasında ilişki. Sol + sağ, toplam hedeften küçükse sol ileri, büyükse sağ geri.
+
+```java
+if (sum < target) left++;
+else              right--;
+```
+
+Kalıp: Sıralı dizide iki eleman ilişkisi, palindrome, trapping rain water
+
+---
+
+**Kadane — Max Subarray**
+
+Her noktada "devam et mi, baştan başla mı?" kararı. O(n).
+
+```java
+currentSum = Math.max(nums[i], currentSum + nums[i]);
+maxSum = Math.max(maxSum, currentSum);
+```
+
+currentSum negatifse taşıma, bırak — yeniden başla.
+
+---
+
+**Prefix Sum — Sorguları O(1)'e indir**
+
+Ön işleme O(n), ardından her aralık sorgusu O(1).
+
+```java
+prefix[i+1] = prefix[i] + nums[i];           // ön işleme
+rangeSum = prefix[right+1] - prefix[left];    // sorgu
+```
+
+Kalıp: Aynı dizi üzerinde çok sayıda aralık toplamı sorgusu
+
