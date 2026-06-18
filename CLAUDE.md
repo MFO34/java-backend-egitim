@@ -96,9 +96,11 @@ Durum: **Kavramsal okuma tamamlandı.** Yazma pratiği sonraya bırakıldı.
 
 **Aktif repo: 01 — DSA-FUNDAMENTALS**
 
-Tamamlanan konular: Big O, Arrays (Two Sum, Sliding Window, Two Pointer, Kadane, Prefix Sum)
+Tamamlanan konular: Big O, Arrays, Hashing, LinkedList, Stack/Queue, Tree, Graph, Sorting, DP
 
-Sıradaki: Hashing (Group Anagrams, LRU Cache)
+Durum: **Kavramsal okuma tamamlandı.** Yazma pratiği sonraya bırakıldı.
+
+Sıradaki repo: **04 — DESIGN-PATTERNS**
 
 ---
 
@@ -486,4 +488,110 @@ rangeSum = prefix[right+1] - prefix[left];    // sorgu
 ```
 
 Kalıp: Aynı dizi üzerinde çok sayıda aralık toplamı sorgusu
+
+---
+
+### Hashing
+
+**HashMap içi:** hash fonksiyonu → kutu indeksi → O(1). Collision olursa aynı kutuda liste. Worst case O(n), ortalama O(1).
+
+**Group Anagrams:** Sıralanmış hali ortak anahtar. `"eat"→"aet"`, `"tea"→"aet"` → aynı grup.
+`computeIfAbsent(key, k -> new ArrayList<>()).add(s)` — key yoksa oluştur, ekle.
+
+**Longest Consecutive:** HashSet'e at. `n-1` yoksa başlangıç noktası — oradan say. O(n).
+
+**LRU Cache:** HashMap (hız) + DoublyLinkedList (sıra). Erişilince sona taşı, dolunca baştan sil.
+Java'da: `LinkedHashMap` + `removeEldestEntry` override.
+
+---
+
+### LinkedList
+
+Node: `val` + `next`. Son node `null`. Head tek giriş noktası.
+
+**Reverse:** 3 pointer (prev, curr, next). `next = curr.next` → `curr.next = prev` → ilerle. O(n).
+
+**Floyd Cycle:** slow 1 adım, fast 2 adım. Döngüde buluşurlar, düz yolda fast null'a ulaşır. O(n) O(1).
+
+**Find Middle:** fast sona gelince slow ortada (slow 1, fast 2 adım).
+
+**Kth from End:** fast'i k adım öne al, ikisi aynı hızda yürü, fast null'da slow kth'da.
+
+---
+
+### Stack / Queue
+
+**Stack LIFO:** push/pop/peek hepsi O(1). Son giren ilk çıkar.
+
+**Valid Parentheses:** açanı stack'e at, kapayan gelince tepesiyle eşleştir. Son kontrol: `stack.isEmpty()`.
+
+**Min Stack:** iki paralel stack — biri veri, biri o ana kadarki minimum. Her push'ta min güncellenir.
+
+**Queue FIFO:** enqueue/dequeue O(1). İlk giren ilk çıkar.
+
+**BFS ile Level Order:** `int size = queue.size()` ile katman sınırı koy, o kadar işle, çocukları ekle.
+
+---
+
+### Tree
+
+Node: `val` + `left` + `right`. BST kuralı: sol < root < sağ → arama O(log n).
+
+**Traversal:** Inorder (Sol→Root→Sağ) BST'de sıralı çıktı verir.
+
+**Recursive kalıp:** null check → sol'a güven → sağ'a güven → sonuçları birleştir.
+
+**maxDepth:** `1 + Math.max(maxDepth(left), maxDepth(right))` — tüm tree problemlerinin şablonu.
+
+**LCA:** ikisi aynı tarafta → in, farklı tarafta → bu node LCA.
+
+**Path Sum:** `hasPathSum(node, target - node.val)` — leaf'te kalan 0 mı?
+
+---
+
+### Graph
+
+**Adjacency List:** her vertex komşu listesi tutar. Matrix'ten space-efficient.
+
+**BFS:** queue + visited array. Katman katman, ağırlıksız en kısa yol. O(V+E).
+
+**DFS:** recursive + visited array. Derine git, yol var mı, tüm yollar. O(V+E).
+
+**Number of Islands:** grid = graph. `1` görünce DFS ile tüm adayı `0`'a çevir, say.
+
+**Dijkstra:** PriorityQueue + dist array. Her adımda en kısa mesafeli işle. `d > dist[node]` ise eski kayıt, atla. O((V+E) log V).
+
+**BFS vs DFS:** en kısa yol → BFS. Yol var mı / tüm yollar → DFS.
+
+---
+
+### Sorting
+
+**Merge Sort:** böl → sırala → birleştir. O(n log n) garantili, stable, O(n) space.
+`mid = left + (right - left) / 2` — overflow önleme.
+
+**Quick Sort:** pivot seç (son eleman), küçükleri sola, büyükleri sağa. O(n log n) ortalama, O(n²) worst, in-place.
+
+**Merge stable, Quick değil.** Merge linked list için, Quick array için tercih edilir.
+
+**Binary Search:** `left <= right`, `mid = left + (right - left) / 2`. Hedeften küçük → `left = mid+1`, büyük → `right = mid-1`. O(log n).
+
+---
+
+### Dynamic Programming
+
+İki koşul: optimal alt yapı + örtüşen alt problemler.
+
+**Top-Down (Memoization):** recursive + cache. Hesaplandıysa cache'ten al.
+
+**Bottom-Up (Tabulation):** küçükten büyüğe dizi doldur. Genellikle daha hızlı, stack overflow yok.
+
+**DP Şablonu:** dp[i] tanımla → base case → recurrence → cevap.
+
+**Fibonacci/Climbing Stairs:** `dp[i] = dp[i-1] + dp[i-2]`. İki değişkenle O(1) space.
+
+**Coin Change:** `dp[i] = min(dp[i-coin] + 1)` tüm coin'ler için. `dp[0]=0`, rest=∞.
+
+**House Robber:** `next = max(curr, prev + num)`. Yan yana soyamazsın — al mı atla mı?
+
 
